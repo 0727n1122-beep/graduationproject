@@ -12,7 +12,6 @@
 - GitHub
 - Web Development
 - Programming
-# 🐰 Team 212223 — 졸업 프로젝트
 
 ---
 
