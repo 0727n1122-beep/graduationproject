@@ -1,0 +1,14 @@
+{
+  "name": "promptforge",
+  "version": "0.1.0",
+  "description": "프롬프트 자동 최적화 기반 LLM API 비용 실시간 비교 웹 서비스",
+  "type": "module",
+  "scripts": {
+    "demo": "node src/demo.mjs"
+  },
+  "keywords": ["llm", "prompt-optimization", "token-analysis", "langchain", "tiktoken"],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
