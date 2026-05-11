@@ -98,16 +98,39 @@
 - tiktoken 기반 정밀 토큰 계산
 - 자체 개발한 한국어 filler word 감지 엔진
 - Claude API 실제 연동
+
+ 
+## 구현 현황
+ 
+> 중간 점검 기준 (2026-05)
+ 
+| 기능 | 상태 | 비고 |
+|------|------|------|
+| 프롬프트 입력 UI | ✅ 완료 | Vercel 배포 완료 |
+| 비용 비교 카드 UI | ✅ 완료 | GPT-4 / Gemini / Claude 3종 |
+| 프롬프트 작성 가이드 | ✅ 완료 | 5가지 안티패턴 예시 |
+| 글자 수 기반 토큰 추정 | ✅ 완료 | 데모용 추정식 |
+| 프롬프트 자동 최적화 | 🔄 진행중 | 예시 프롬프트 기반 동작 |
+| tiktoken 정밀 토큰 계산 | 🔄 진행중 | 기말 목표 |
+| FastAPI 백엔드 연동 | 🔄 진행중 | 기말 목표 |
+| Claude API 실제 연동 | ⏳ 미완료 | 기말 목표 |
+| 한국어 filler word 감지 엔진 | ⏳ 미완료 | 기말 목표 |
+ 
+---
+
 ## 기술 스택
+
 
 | 구분 | 기술 |
 |------|------|
-| **Frontend** | HTML, CSS, JavaScript |
+| **Frontend** | HTML, CSS, JavaScript, React.js, TailwindCSS |
 | **Backend** | Node.js (데모), FastAPI Python (기말 목표) |
+| **AI/LLM** | tiktoken, LangChain, LLMLingua (기말 목표) |
 | **토큰 계산** | 글자 수 기반 추정식 (데모), tiktoken (기말 목표) |
-| **AI API** | Anthropic Claude API (기말 목표) |
-| **배포** | Vercel |
-
+| **DB** | Firebase Firestore (기말 목표) |
+| **외부 API** | OpenAI API, Anthropic Claude API, Google AI SDK (기말 목표) |
+| **배포** | Vercel (프론트), Railway or Render (백엔드, 기말 목표) |
+ 
 
 
 ## 시작하기
@@ -131,7 +154,24 @@ node src/demo.mjs
 # http://localhost:3000
 
 ```
-
+ 
+### 환경변수 설정
+ 
+API 연동 기능 사용 시 `.env` 파일이 필요합니다. 아래 `.env.example`을 참고해 `.env`를 생성하세요.
+ 
+```bash
+cp .env.example .env
+```
+ 
+```env
+# .env.example
+OPENAI_API_KEY=your_openai_api_key_here
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+GOOGLE_AI_API_KEY=your_google_ai_api_key_here
+```
+ 
+> ⚠️ `.env` 파일은 절대 커밋하지 마세요. `.gitignore`에 포함되어 있습니다.
+ 
 
 ## 프로젝트 구조
 
