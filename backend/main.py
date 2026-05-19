@@ -132,13 +132,13 @@ async def optimize(request: PromptRequest):
     try:
         print("Claude 응답:", message.content[0].text)
         response_text = message.content[0].text.strip()
-        # ```json ... ``` 제거
-        if response_text.startswith("```"):
-            response_text = response_text.split("```")[1]
-            if response_text.startswith("json"):
-                response_text = response_text[4:]
-        result = json.loads(response_text.strip())
-    except json.JSONDecodeError:
+        # 첫 번째 { 부터 마지막 } 까지만 추출
+        start = response_text.find("{")
+        end = response_text.rfind("}") + 1
+        if start != -1 and end != 0:
+            response_text = response_text[start:end]
+        result = json.loads(response_text)
+    except (json.JSONDecodeError, IndexError):
         # JSON 파싱 실패 시 fallback
         return {
             "error": "최적화 실패. 다시 시도해주세요.",
