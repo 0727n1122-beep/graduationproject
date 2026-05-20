@@ -1,14 +1,43 @@
 "use client";
 
 import { useState } from "react";
-import PromptInput from "../src/components/PromptInput";
+import PromptInput from "@/src/components/PromptInput";
+import BeforeAfter from "@/src/components/BeforeAfter";
+
+// 명확한 타입 정의
+// result 변수는 해당 4가지 항목만 들어가고, 각각 타입이 도와준다
+interface OptimizeResult {
+  original: string;
+  optimized: string;
+  tokensBefore: number;
+  tokensAfter: number;
+}
 
 export default function Home() {
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState<OptimizeResult | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleOptimize = async (prompt: string) => {
-    console.log("입력된 프롬프트:", prompt);
-    // 나중에 백엔드 API 연결할 곳
+    setLoading(true);
+
+    // Mock 데이터 (임시)
+    setTimeout(() => {
+      const optimized = prompt
+        .replace(/좀|혹시|아|일단|그냥/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      const tokensBefore = Math.ceil(prompt.length * 2.5);
+      const tokensAfter = Math.ceil(optimized.length * 2.5);
+
+      setResult({
+        original: prompt,
+        optimized: optimized || prompt,
+        tokensBefore,
+        tokensAfter,
+      });
+      setLoading(false);
+    }, 1500);
   };
 
   return (
@@ -22,6 +51,22 @@ export default function Home() {
         </p>
 
         <PromptInput onOptimize={handleOptimize} />
+
+        {loading && (
+          <div className="text-center mt-8">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p className="text-lg text-gray-600 mt-4">최적화 중...</p>
+          </div>
+        )}
+
+        {result && !loading && (
+          <BeforeAfter
+            original={result.original}
+            optimized={result.optimized}
+            tokensBefore={result.tokensBefore}
+            tokensAfter={result.tokensAfter}
+          />
+        )}
       </div>
     </main>
   );
