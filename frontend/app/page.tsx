@@ -80,7 +80,7 @@ export default function Home() {
             {/* 왼쪽: 타이틀 */}
             <div>
               <h1 className="text-6xl font-bold text-[#f0fbfa] mb-6 leading-tight">
-                AI Tasker:
+                Minifi :
                 <br />
                 Efficiency,
                 <br />
