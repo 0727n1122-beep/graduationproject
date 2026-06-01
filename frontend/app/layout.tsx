@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AI Tasker",
+  title: "Minifi",
   description: "프롬프트 최적화 프로토콜",
 };
 

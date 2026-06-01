@@ -7,7 +7,7 @@ export default function Header() {
         {/* 로고 */}
         <div className="flex items-center gap-2">
           <div className="text-[#77B0AA] text-2xl font-bold">▲</div>
-          <span className="text-white text-xl font-bold">AI Tasker</span>
+          <span className="text-white text-xl font-bold">Minifi</span>
         </div>
 
         {/* 네비게이션 */}
