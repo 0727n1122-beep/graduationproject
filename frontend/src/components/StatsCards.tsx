@@ -1,18 +1,14 @@
 "use client";
-
 import Image from "next/image";
-
 interface ModelCost {
   before: number;
   after: number;
 }
-
 interface StatsCardsProps {
   tokensBefore: number;
   tokensAfter: number;
   costs: Record<string, ModelCost>;
 }
-
 export default function StatsCards({
   tokensBefore,
   tokensAfter,
@@ -20,7 +16,6 @@ export default function StatsCards({
 }: StatsCardsProps) {
   const savedTokens = tokensBefore - tokensAfter;
   const savedPercent = Math.round((savedTokens / tokensBefore) * 100);
-
   const modelLabels: Record<string, string> = {
     "claude-opus-4": "Opus",
     "claude-sonnet-4": "Sonnet",
@@ -30,17 +25,13 @@ export default function StatsCards({
     "gemini-2-5-pro": "Gem-Pro",
     "gemini-2-5-flash": "Gem-Flash",
   };
-
   const maxCost =
     costs && Object.keys(costs).length > 0
       ? Math.max(...Object.values(costs).map((c) => c.before))
       : 0;
-
-  // return 위로 이동!
   const maxTokens = Math.max(tokensBefore, tokensAfter);
-
   return (
-    <div className="grid md:grid-cols-2 gap-6 mt-8 max-w-6xl mx-auto">
+    <div className="grid md:grid-cols-2 gap-6 mt-12 max-w-6xl mx-auto">
       {/* 토큰 절감 카드 */}
       <div className="bg-[#CBE4DE] p-6 rounded-lg">
         <div className="flex items-center justify-between mb-4">
@@ -85,7 +76,6 @@ export default function StatsCards({
           </div>
         </div>
       </div>
-
       {/* 모델별 비용 비교 카드 */}
       <div className="bg-[#CBE4DE] p-6 rounded-lg">
         <div className="flex items-center justify-between mb-4">
@@ -100,27 +90,27 @@ export default function StatsCards({
             className="w-8 h-8"
           />
         </div>
-
         {/* 모델별 바 차트 */}
-        <div className="flex items-end gap-1 mt-20" style={{ height: "100px" }}>
+        <div
+          className="flex items-end gap-1 mt-12"
+          style={{ height: "120px", overflow: "hidden" }}
+        >
           {Object.entries(costs || {}).map(([model, cost]) => (
             <div
               key={model}
               className="flex flex-col items-center gap-1 flex-1 h-full"
             >
               <div
-                className="w-full flex items-end gap-[2px] h-full"
-                style={{ height: "80px" }}
+                className="w-full flex items-end gap-[2px]"
+                style={{ height: "100px" }}
               >
-                {/* Before 막대 */}
                 <div
                   className="flex-1 bg-[#135D66] rounded-t"
-                  style={{ height: `${(cost.before / maxCost) * 100}px` }}
+                  style={{ height: `${(cost.before / maxCost) * 100}%` }}
                 />
-                {/* After 막대 */}
                 <div
                   className="flex-1 bg-[#77B0AA] rounded-t"
-                  style={{ height: `${(cost.after / maxCost) * 100}px` }}
+                  style={{ height: `${(cost.after / maxCost) * 100}%` }}
                 />
               </div>
               <span className="text-[8px] text-[#003C43] font-semibold text-center leading-tight">
@@ -129,7 +119,6 @@ export default function StatsCards({
             </div>
           ))}
         </div>
-
         {/* 범례 */}
         <div className="flex gap-4 mt-2">
           <div className="flex items-center gap-1">
