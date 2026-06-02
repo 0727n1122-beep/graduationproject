@@ -120,31 +120,10 @@ async def optimize(request: PromptRequest):
     
     if len(prompt.strip()) < 5:
         return {"error": "프롬프트가 너무 짧습니다.", "code": "TOO_SHORT"}
-    # Step 2: 룰 기반 filler word 제거
-    FILLER_WORDS = [
-        "안녕하세요", "안녕히세요", "감사합니다", "감사해요", "고마워요",
-        "혹시", "혹시나", "일단", "그냥", "좀", "좀더", "약간",
-        "가능하시다면", "가능하면", "가능하다면", "부탁드립니다", "부탁해요",
-        "해주세요", "해주실 수 있나요", "해주실 수 있으신가요",
-        "알려주세요", "알려주실 수 있나요", "알려주실 수 있으신가요",
-        "아 그리고", "아 맞다", "아 참", "그리고", "근데", "그런데",
-        "이거", "이것", "그거", "저거", "뭐", "왜", "어떻게",
-        "엄청", "진짜", "완전", "너무", "정말", "매우",
-    ]
-    
-    cleaned_prompt = prompt
-    for filler in FILLER_WORDS:
-        cleaned_prompt = cleaned_prompt.replace(filler, "")
-    
-    # 여러 공백 정리
-    import re
-    cleaned_prompt = re.sub(r'\s+', ' ', cleaned_prompt).strip()
 
     # 원본 토큰 수 계산
     original_tokens = count_tokens(prompt)
     
-    # Step 2 적용 후 토큰 수
-    cleaned_tokens = count_tokens(cleaned_prompt)
 
     # Claude API 호출
     message = client.messages.create(
@@ -157,7 +136,7 @@ async def optimize(request: PromptRequest):
 
 [원본 프롬프트]
 \"\"\"
-{cleaned_prompt}
+{prompt}
 \"\"\"
 
 [1단계: 입력 복잡도 판정]
@@ -296,6 +275,11 @@ async def optimize(request: PromptRequest):
             "guide": guide
         })
 
+    # 긍정 피드백
+    feedback = None
+    if len(issues_with_guides) == 0:
+        feedback = "✅ 잘 작성된 프롬프트예요! 개선할 부분이 없습니다."
+
     return {
         "original_tokens": original_tokens,
         "optimized_tokens": optimized_tokens,
@@ -303,5 +287,6 @@ async def optimize(request: PromptRequest):
         "saved_percent": saved_percent,
         "optimized_prompt": result["optimized"],
         "issues": issues_with_guides,
+        "feedback": feedback,
         "costs": costs,
     }
