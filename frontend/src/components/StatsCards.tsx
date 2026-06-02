@@ -27,7 +27,7 @@ export default function StatsCards({
   };
   const maxCost =
     costs && Object.keys(costs).length > 0
-      ? Math.max(...Object.values(costs).map((c) => c.before))
+      ? Math.max(...Object.values(costs).flatMap((c) => [c.before, c.after]))
       : 0;
   const maxTokens = Math.max(tokensBefore, tokensAfter);
   return (
@@ -55,24 +55,38 @@ export default function StatsCards({
           </div>
         </div>
         {/* 토큰 절감 바 차트 */}
-        <div className="mt-15 flex items-end gap-3" style={{ height: "80px" }}>
-          <div className="flex flex-col items-center gap-1 flex-1">
-            <div
-              className="w-full bg-[#135D66] rounded-t"
-              style={{ height: `${(tokensBefore / maxTokens) * 100}px` }}
-            />
-            <span className="text-[12px] text-[#003C43] font-semibold">
+        <div className="flex flex-col gap-4 mt-6">
+          {/* Before */}
+          <div className="flex items-center gap-3">
+            <span className="text-[12px] text-[#003C43] font-semibold w-12 shrink-0">
               Before
             </span>
+            <div className="flex-1 bg-[#e0f0ee] rounded-full h-6 relative">
+              <div
+                className="bg-[#135D66] h-6 rounded-full group relative cursor-pointer transition-all"
+                style={{ width: `${(tokensBefore / maxTokens) * 100}%` }}
+              >
+                <div className="absolute -top-8 right-0 bg-[#003C43] text-white text-[11px] font-semibold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                  {tokensBefore} tokens
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="flex flex-col items-center gap-1 flex-1 h-full">
-            <div
-              className="w-full bg-[#77B0AA] rounded-t"
-              style={{ height: `${(tokensAfter / maxTokens) * 100}px` }}
-            />
-            <span className="text-[12px] text-[#003C43] font-semibold">
+          {/* After */}
+          <div className="flex items-center gap-3">
+            <span className="text-[12px] text-[#003C43] font-semibold w-12 shrink-0">
               After
             </span>
+            <div className="flex-1 bg-[#e0f0ee] rounded-full h-6 relative">
+              <div
+                className="bg-[#77B0AA] h-6 rounded-full group relative cursor-pointer transition-all"
+                style={{ width: `${(tokensAfter / maxTokens) * 100}%` }}
+              >
+                <div className="absolute -top-8 right-0 bg-[#003C43] text-white text-[11px] font-semibold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                  {tokensAfter} tokens
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -105,13 +119,21 @@ export default function StatsCards({
                 style={{ height: "100px" }}
               >
                 <div
-                  className="flex-1 bg-[#135D66] rounded-t"
+                  className="flex-1 bg-[#135D66] rounded-t group relative cursor-pointer"
                   style={{ height: `${(cost.before / maxCost) * 100}%` }}
-                />
+                >
+                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[#003C43] text-white text-[11px] font-semibold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                    ${cost.before.toFixed(4)}
+                  </div>
+                </div>
                 <div
-                  className="flex-1 bg-[#77B0AA] rounded-t"
+                  className="flex-1 bg-[#77B0AA] rounded-t group relative cursor-pointer"
                   style={{ height: `${(cost.after / maxCost) * 100}%` }}
-                />
+                >
+                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[#003C43] text-white text-[11px] font-semibold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                    ${cost.after.toFixed(4)}
+                  </div>
+                </div>
               </div>
               <span className="text-[8px] text-[#003C43] font-semibold text-center leading-tight">
                 {modelLabels[model] || model}
