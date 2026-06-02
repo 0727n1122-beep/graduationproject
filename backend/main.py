@@ -170,8 +170,8 @@ async def optimize(request: PromptRequest):
   "issues": [
     {{
       "category": "AMBIGUOUS | FILLER | REDUNDANT | UNSTRUCTURED | CODE_DUMP | MISSING_CONSTRAINT | MONOLITHIC_REQUEST",
-      "snippet": "원본에서 문제가 된 부분 (30자 이내)",
-      "explanation": "왜 토큰 낭비인지 한 문장 (50자 이내)"
+      "snippet": "문제가 된 부분만 발췌. 원문 전체를 그대로 넣지 말 것",
+      "explanation": "왜 토큰, 비용 낭비로 이어지는지 간결하게(1-2문장)"
     }}
   ]
 }}
@@ -180,7 +180,8 @@ async def optimize(request: PromptRequest):
 - 순수 JSON 객체만 출력. 백틱(```), "json" 표시, 설명 문장, 인사말 일절 금지.
 - 응답의 첫 글자는 {{, 마지막 글자는 }}.
 - issues 배열은 최소 0개, 최대 5개. 가장 중요한 문제부터.
-- 입력이 10자 미만이면 issues=[], optimized=원본 그대로.
+- issues=[]는 "분석 결과 개선할 점이 없음"을 의미한다. 칸을 채우기 위해 사소하거나 억지스러운 문제를 만들지 말 것. 정말 없으면 빈 배열로 둘 것.
+- "입력이 너무 짧거나 무의미함"은 이 단계에서 판단하지 않는다(백엔드 길이 검증이 선행 차단). 따라서 짧다는 이유만으로 issues를 비우지 말 것. 짧은 입력이라도 분석은 정상 수행하고, 문제가 있으면 기록할 것.
 
 [카테고리 정의 — 우선순위 순]
 
