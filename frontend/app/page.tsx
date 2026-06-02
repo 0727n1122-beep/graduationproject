@@ -88,7 +88,7 @@ export default function Home() {
             </div>
             {/* 오른쪽: 입력 카드 */}
             <div>
-              <div className="bg-[#135D66] p-6 rounded-lg min-w-[300px]">
+              <div className="bg-[#135D66] p-6 rounded-lg min-w-75">
                 <h2 className="text-[22px] font-semibold text-white mb-10">
                   프롬프트 최적화 프로토콜
                 </h2>
@@ -108,7 +108,6 @@ export default function Home() {
             <>
               <OptimizedResult
                 optimized={result.optimized}
-                tokensBefore={result.tokensBefore}
                 tokensAfter={result.tokensAfter}
                 improvement={result.improvement}
               />
