@@ -5,6 +5,21 @@ import Header from "@/src/components/Header";
 import PromptInput from "@/src/components/PromptInput";
 import OptimizedResult from "@/src/components/OptimizedResult";
 import StatsCards from "@/src/components/StatsCards";
+import DiagnosisCards from "@/src/components/DiagnosisCards";
+
+interface Guide {
+  title?: string;
+  tip?: string;
+  example_bad?: string;
+  example_good?: string;
+}
+
+interface Issue {
+  category?: string;
+  snippet?: string;
+  explanation: string;
+  guide?: Guide;
+}
 
 interface OptimizeResult {
   original: string;
@@ -13,6 +28,7 @@ interface OptimizeResult {
   tokensAfter: number;
   improvement: number;
   costs: Record<string, ModelCost> | null; // 모델별 비용 정보 추가
+  issues: Issue[]; // 발견된 문제점 (+ 각 issue의 guide.tip = 개선 포인트)
 }
 
 interface ModelCost {
@@ -47,12 +63,6 @@ export default function Home() {
         return;
       }
 
-      // ✅ 객체에서 각 필드 파싱
-      const optimized = data.optimized_prompt;
-      const tokensBefore = data.original_tokens;
-      const tokensAfter = data.optimized_tokens;
-      const improvement = data.saved_percent;
-
       setResult({
         original: prompt,
         optimized: data.optimized_prompt,
@@ -60,6 +70,7 @@ export default function Home() {
         tokensAfter: data.optimized_tokens,
         improvement: data.saved_percent,
         costs: data.costs, // 모델별 비용 정보 추가
+        issues: data.issues ?? [], // 없으면 빈 배열 → 진단 카드 미표시
       });
     } catch (error) {
       console.error("최적화 실패:", error);
@@ -122,6 +133,8 @@ export default function Home() {
                 tokensAfter={result.tokensAfter}
                 costs={result.costs || {}}
               />
+              {/* 맨 밑에 추가된 진단 카드 (개선 포인트는 issue.guide.tip에서 자동 생성) */}
+              <DiagnosisCards issues={result.issues} />
             </>
           )}
         </div>
