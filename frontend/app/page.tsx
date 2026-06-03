@@ -116,7 +116,10 @@ export default function Home() {
                 tokensAfter={result.tokensAfter}
                 costs={result.costs || {}}
               />
-              <DiagnosisCards issues={result.issues} />
+              <DiagnosisCards
+                issues={result.issues}
+                original={result.original}
+              />
             </>
           )}
         </div>
