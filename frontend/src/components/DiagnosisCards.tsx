@@ -70,21 +70,18 @@ export default function DiagnosisCards({
               Certified Prompt Quality Report
             </p>
             <h3 className="text-[20px] font-bold text-white mb-2">
-              Recognized as Top-Quality Prompt
+              Top-Quality Prompt
             </h3>
             <p className="text-[#CBE4DE] text-[16px] leading-6">
-              이 프롬프트는 이미 명확하고 구조화되어 있어요. LLM이 의도를 정확히
-              파악하고 최적의 결과를 낼 수 있는 상태입니다.
-              <br />
-              이대로 사용하세요.
+              명확하고 구조화된 프롬프트입니다. 바로 사용해도 좋아요.
             </p>
           </div>
           {/* 복사 버튼 */}
           <button
             onClick={handleCopy}
-            className="shrink-0 px-5 py-3 bg-[#2C3333] text-[#CBE4DE] text-[14px] font-bold rounded-lg hover:bg-[#CBE4DE] hover:text-[#2C3333] transition-colors whitespace-nowrap"
+            className="shrink-0 px-4 py-2.5 bg-[#2C3333] text-[#CBE4DE] text-[14px] font-bold rounded-lg hover:bg-[#CBE4DE] hover:text-[#2C3333] transition-colors whitespace-nowrap"
           >
-            {copied ? "✓ Copied!" : "Copy Certified Prompt"}
+            {copied ? "✓ Copied!" : "Copy Prompt"}
           </button>
         </div>
       </div>
