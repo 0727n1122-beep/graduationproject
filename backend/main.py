@@ -104,6 +104,12 @@ def calculate_costs(input_tokens: int, output_tokens: int) -> dict:
         costs[model] = {"before": round(before, 6), "after": round(after, 6)}
     return costs
 
+# 카테고리 → scope 매핑 (인라인 교체 가능 vs 구조적 재구성 필요)
+STRUCTURAL_CATEGORIES = {"MONOLITHIC_REQUEST", "UNSTRUCTURED", "CODE_DUMP"}
+
+def infer_scope(category: str) -> str:
+    return "structural" if category in STRUCTURAL_CATEGORIES else "inline"
+
 @app.get("/")
 def root():
     return {"status": "ok", "message": "PromptForge API"}
@@ -171,7 +177,10 @@ async def optimize(request: PromptRequest):
     {{
       "category": "AMBIGUOUS | FILLER | REDUNDANT | UNSTRUCTURED | CODE_DUMP | MISSING_CONSTRAINT | MONOLITHIC_REQUEST",
       "snippet": "문제가 된 핵심 표현만 (30자 미만 엄수. 초과하면 앞부분만 쓰고 '…' 처리. 예: '이메일이랑 비밀번호…')",
-      "explanation": "왜 토큰, 비용 낭비로 이어지는지 간결하게(1-2문장)"
+      "explanation": "왜 토큰, 비용 낭비로 이어지는지 간결하게(1-2문장)",
+      "replacement": "snippet을 대체할 구체적인 텍스트. 삭제만 하면 되는 경우 빈 문자열 \"\". 구조적 재구성(MONOLITHIC_REQUEST 등)이라 단일 대체문이 없으면 null",
+      "occurrence": "원본 프롬프트 내에서 이 snippet이 몇 번째로 등장하는 항목인지 (1부터 시작하는 정수). 동일 snippet이 여러 번 나올 때만 2 이상, 기본은 1",
+      "confidence": "이 지적이 실제 문제일 확신도 (0.0~1.0 사이 숫자). 명백한 문제면 0.9 이상, 애매하면 0.5~0.7"
     }}
   ]
 }}
@@ -182,6 +191,7 @@ async def optimize(request: PromptRequest):
 - issues 배열은 최소 0개, 최대 5개. 가장 중요한 문제부터.
 - issues=[]는 "분석 결과 개선할 점이 없음"을 의미한다. 칸을 채우기 위해 사소하거나 억지스러운 문제를 만들지 말 것. 정말 없으면 빈 배열로 둘 것.
 - "입력이 너무 짧거나 무의미함"은 이 단계에서 판단하지 않는다(백엔드 길이 검증이 선행 차단). 따라서 짧다는 이유만으로 issues를 비우지 말 것. 짧은 입력이라도 분석은 정상 수행하고, 문제가 있으면 기록할 것.
+- snippet은 반드시 [원본 프롬프트]에 실제로 등장하는 문자열 그대로 인용할 것. 지어내거나 의역하지 말 것 (원본에 없는 snippet은 백엔드에서 자동 폐기됨).
 
 [카테고리 정의 — 우선순위 순]
 
@@ -272,11 +282,31 @@ async def optimize(request: PromptRequest):
     # 비용 계산
     costs = calculate_costs(original_tokens, optimized_tokens)
 
-    # 카테고리별 가이드 매칭
+    # 카테고리별 가이드 매칭 + v5 스키마 필드 보정 + snippet 원본 검증
     issues_with_guides = []
+    seen_snippets = {}  # snippet별 등장 횟수 카운트 (occurrence 자동 보정용)
+
     for issue in result.get("issues", []):
+        snippet = issue.get("snippet", "")
+
+        # snippet 원본 검증: 실제로 원본 프롬프트에 존재하지 않으면 드롭 (환각 방지)
+        # Claude가 30자 초과 시 '…' 처리하는 경우가 있어, 말줄임표 제거 후에도 재검사
+        snippet_clean = snippet.rstrip("…").strip()
+        if snippet and (snippet not in prompt) and (not snippet_clean or snippet_clean not in prompt):
+            continue
+
         category = issue.get("category", "")
         guide = GUIDES.get(category, {})
+
+        # v5 스키마 필드 기본값 보정 (Claude가 필드를 빠뜨렸을 경우 대비)
+        issue.setdefault("scope", infer_scope(category))
+        issue.setdefault("replacement", None)
+        issue.setdefault("confidence", 0.8)
+
+        # occurrence: 동일 snippet이 여러 번 나오면 순서대로 1, 2, 3 ...
+        seen_snippets[snippet] = seen_snippets.get(snippet, 0) + 1
+        issue.setdefault("occurrence", seen_snippets[snippet])
+
         issues_with_guides.append({
             **issue,
             "guide": guide
