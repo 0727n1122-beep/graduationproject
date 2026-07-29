@@ -30,7 +30,7 @@ export default function PromptInput({ onOptimize }: PromptInputProps) {
         <button
           onClick={handleSubmit}
           disabled={!prompt.trim()}
-          className="px-6 py-3 bg-[#10959a] text-[#CBE4DE] text-lg font-semibold rounded-lg hover:bg-[#CBE4DE] hover:text-[#10959a] disabled:bg-[#CBE4DE] disabled:cursor-not-allowed transition-colors"
+          className="px-3.5 py-2.5 bg-[#10959a] text-[#CBE4DE] text-[14px] font-semibold rounded-lg hover:bg-[#CBE4DE] hover:text-[#10959a] disabled:bg-[#CBE4DE] disabled:cursor-not-allowed transition-colors"
         >
           최적화하기
         </button>

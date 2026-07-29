@@ -106,8 +106,8 @@ export default function StatsCards({
         </div>
         {/* 모델별 바 차트 */}
         <div
-          className="flex items-end gap-1 mt-12"
-          style={{ height: "120px", overflow: "hidden" }}
+          className="flex items-end gap-1 mt-14"
+          style={{ height: "120px", overflow: "visible" }}
         >
           {Object.entries(costs || {}).map(([model, cost]) => (
             <div

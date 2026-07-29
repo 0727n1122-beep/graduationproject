@@ -1,4 +1,6 @@
 "use client";
+import Image from "next/image";
+import { useState } from "react";
 
 interface Guide {
   title?: string;
@@ -16,14 +18,17 @@ interface Issue {
 
 interface DiagnosisCardsProps {
   issues: Issue[];
-  improvements?: string[]; // 백엔드가 따로 줄 때만 사용. 없으면 guide.tip에서 생성
+  improvements?: string[];
+  original?: string;
 }
 
 export default function DiagnosisCards({
   issues,
   improvements,
+  original,
 }: DiagnosisCardsProps) {
-  // improvements가 따로 안 오면, 각 issue의 guide.tip에서 중복 없이 생성
+  const [copied, setCopied] = useState(false);
+
   const derivedImprovements =
     improvements && improvements.length > 0
       ? improvements
@@ -35,9 +40,52 @@ export default function DiagnosisCards({
           ),
         );
 
-  // 문제점·개선 포인트가 모두 없으면 섹션 자체를 렌더링하지 않음 (앱이 깨지지 않음)
-  if ((!issues || issues.length === 0) && derivedImprovements.length === 0) {
-    return null;
+  const hasIssues = issues && issues.length > 0;
+  const hasImprovements = derivedImprovements.length > 0;
+
+  const handleCopy = () => {
+    if (original) {
+      navigator.clipboard.writeText(original);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  if (!hasIssues && !hasImprovements) {
+    return (
+      <div className="mt-12 max-w-6xl mx-auto">
+        <div className="bg-[#0E8388] p-8 rounded-lg shadow-lg flex items-center gap-6">
+          {/* 왼쪽 아이콘 */}
+          <div className="shrink-0">
+            <Image
+              src="/icons/certificate2.svg"
+              alt="certificate"
+              width={64}
+              height={64}
+            />
+          </div>
+          {/* 텍스트 */}
+          <div className="flex-1">
+            <p className="text-[13px] text-[#86E2A8] font-semibold mb-1">
+              Certified Prompt Quality Report
+            </p>
+            <h3 className="text-[20px] font-bold text-white mb-2">
+              Top-Quality Prompt
+            </h3>
+            <p className="text-[#CBE4DE] text-[16px] leading-6">
+              명확하고 구조화된 프롬프트입니다. 바로 사용해도 좋아요.
+            </p>
+          </div>
+          {/* 복사 버튼 */}
+          <button
+            onClick={handleCopy}
+            className="shrink-0 px-4 py-2.5 bg-[#2C3333] text-[#CBE4DE] text-[14px] font-bold rounded-lg hover:bg-[#CBE4DE] hover:text-[#2C3333] transition-colors whitespace-nowrap"
+          >
+            {copied ? "✓ Copied!" : "Copy Prompt"}
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -47,8 +95,7 @@ export default function DiagnosisCards({
         <h3 className="text-[22px] font-bold text-[#FF8A8A] mb-6">
           발견된 문제점
         </h3>
-
-        {issues && issues.length > 0 ? (
+        {hasIssues ? (
           <ul className="divide-y divide-white/10">
             {issues.map((issue, i) => (
               <li key={i} className="flex gap-3 py-4 first:pt-0 last:pb-0">
@@ -66,17 +113,17 @@ export default function DiagnosisCards({
             ))}
           </ul>
         ) : (
-          <p className="text-[#CBE4DE] text-[15px]">발견된 문제점이 없습니다.</p>
+          <p className="text-[#CBE4DE] text-[15px]">
+            발견된 문제점이 없습니다.
+          </p>
         )}
       </div>
-
       {/* 개선 포인트 */}
       <div className="bg-[#135D66] p-8 rounded-lg shadow-lg">
         <h3 className="text-[22px] font-bold text-[#86E2A8] mb-6">
           개선 포인트
         </h3>
-
-        {derivedImprovements.length > 0 ? (
+        {hasImprovements ? (
           <ul className="divide-y divide-white/10">
             {derivedImprovements.map((point, i) => (
               <li key={i} className="flex gap-3 py-4 first:pt-0 last:pb-0">
