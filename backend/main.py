@@ -9,7 +9,16 @@ import json
 
 load_dotenv()
 
-app = FastAPI()
+# DB 테이블 생성 + auth 라우터 등록
+from database import engine, Base
+from auth import router as auth_router
+import models  # models import해야 Base에 테이블 등록됨
+
+Base.metadata.create_all(bind=engine)  # 서버 시작 시 테이블 자동 생성
+
+app = FastAPI()  # ← 이미 있는 줄
+app.include_router(auth_router)  # ← 이 줄 추가 (app 선언 바로 다음)
+
 
 # CORS 설정
 import os
