@@ -18,7 +18,8 @@ Base.metadata.create_all(bind=engine)  # 서버 시작 시 테이블 자동 생�
 
 app = FastAPI()  # ← 이미 있는 줄
 app.include_router(auth_router)  # ← 이 줄 추가 (app 선언 바로 다음)
-
+from history import router as history_router
+app.include_router(history_router)
 
 # CORS 설정
 import os
