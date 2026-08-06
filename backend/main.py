@@ -26,7 +26,7 @@ app.add_middleware(
 # Anthropic 클라이언트
 client = anthropic.Anthropic(
     api_key=os.getenv("ANTHROPIC_API_KEY"),
-    base_url=os.getenv("ANTHROPIC_BASE_URL"),
+    # base_url=os.getenv("ANTHROPIC_BASE_URL"),
 )
 
 # 요청 모델
