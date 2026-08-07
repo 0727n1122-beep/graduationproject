@@ -1,29 +1,32 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
+from typing import Optional
 import anthropic
 import tiktoken
 import os
 import json
 
+# ── 환경변수 로드 ──────────────────────────────────────────
 load_dotenv()
 
-# DB 테이블 생성 + auth 라우터 등록
-from database import engine, Base
-from auth import router as auth_router
-import models  # models import해야 Base에 테이블 등록됨
+# ── DB 초기화 ──────────────────────────────────────────────
+from database import engine, Base, SessionLocal
+from models import PromptHistory
+import models  # Base에 테이블 등록용
 
 Base.metadata.create_all(bind=engine)  # 서버 시작 시 테이블 자동 생성
 
-app = FastAPI()  # ← 이미 있는 줄
-app.include_router(auth_router)  # ← 이 줄 추가 (app 선언 바로 다음)
+# ── 라우터 import ──────────────────────────────────────────
+from auth import router as auth_router, decode_token
 from history import router as history_router
-app.include_router(history_router)
+from error_coach import router as error_coach_router
 
-# CORS 설정
-import os
+# ── FastAPI 앱 초기화 ──────────────────────────────────────
+app = FastAPI()
 
+# ── CORS 설정 ──────────────────────────────────────────────
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 
 app.add_middleware(
@@ -33,32 +36,39 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# Anthropic 클라이언트
+
+# ── 라우터 등록 ────────────────────────────────────────────
+app.include_router(auth_router)       # /auth/register, /auth/login 등
+app.include_router(history_router)    # /history
+app.include_router(error_coach_router)  # /error-coach
+
+# ── Anthropic 클라이언트 ───────────────────────────────────
 client = anthropic.Anthropic(
     api_key=os.getenv("ANTHROPIC_API_KEY"),
     base_url=os.getenv("ANTHROPIC_BASE_URL"),
 )
 
-# 요청 모델
+# ── 요청 모델 ──────────────────────────────────────────────
 class PromptRequest(BaseModel):
     prompt: str
 
-# 토큰 계산 함수
+# ── 토큰 계산 함수 ─────────────────────────────────────────
 def count_tokens(text: str) -> int:
     enc = tiktoken.get_encoding("cl100k_base")
     return len(enc.encode(text))
 
-# 모델별 비용 계산 (1M 토큰당 USD)
+# ── 모델별 비용 계산 (1M 토큰당 USD) ──────────────────────
 MODELS = {
-    "claude-opus-4": {"input": 15, "output": 75},
-    "claude-sonnet-4": {"input": 3, "output": 15},
-    "claude-haiku-3-5": {"input": 0.8, "output": 4},
-    "gpt-4o": {"input": 2.5, "output": 10},
-    "gpt-4o-mini": {"input": 0.15, "output": 0.6},
-    "gemini-2-5-pro": {"input": 1.25, "output": 10},
+    "claude-opus-4":    {"input": 15,   "output": 75},
+    "claude-sonnet-4":  {"input": 3,    "output": 15},
+    "claude-haiku-3-5": {"input": 0.8,  "output": 4},
+    "gpt-4o":           {"input": 2.5,  "output": 10},
+    "gpt-4o-mini":      {"input": 0.15, "output": 0.6},
+    "gemini-2-5-pro":   {"input": 1.25, "output": 10},
     "gemini-2-5-flash": {"input": 0.15, "output": 0.6},
 }
-# 카테고리별 가이드 사전
+
+# ── 카테고리별 가이드 사전 ─────────────────────────────────
 GUIDES = {
     "AMBIGUOUS": {
         "title": "모호한 표현",
@@ -104,6 +114,14 @@ GUIDES = {
     },
 }
 
+# ── 카테고리 → scope 매핑 ──────────────────────────────────
+STRUCTURAL_CATEGORIES = {"MONOLITHIC_REQUEST", "UNSTRUCTURED", "CODE_DUMP"}
+
+def infer_scope(category: str) -> str:
+    """카테고리로 scope 자동 추론 (inline vs structural)"""
+    return "structural" if category in STRUCTURAL_CATEGORIES else "inline"
+
+# ── 비용 계산 함수 ─────────────────────────────────────────
 def calculate_costs(input_tokens: int, output_tokens: int) -> dict:
     costs = {}
     for model, price in MODELS.items():
@@ -114,35 +132,38 @@ def calculate_costs(input_tokens: int, output_tokens: int) -> dict:
         costs[model] = {"before": round(before, 6), "after": round(after, 6)}
     return costs
 
+# ── 헬스체크 ───────────────────────────────────────────────
 @app.get("/")
 def root():
-    return {"status": "ok", "message": "PromptForge API"}
+    return {"status": "ok", "message": "Minifi API"}
 
+# ── 프롬프트 최적화 ────────────────────────────────────────
 @app.post("/optimize")
-async def optimize(request: PromptRequest):
+async def optimize(
+    request: PromptRequest,
+    authorization: Optional[str] = Header(None)  # 로그인 유저 히스토리 자동 저장용
+):
     prompt = request.prompt
+
     # Step 1: 룰 기반 사전 차단
     if not prompt or not prompt.strip():
         return {"error": "프롬프트를 입력해주세요.", "code": "EMPTY_INPUT"}
-    
     if len(prompt) > 5000:
         return {"error": "프롬프트가 너무 깁니다. 5000자 이하로 입력해주세요.", "code": "TOO_LONG"}
-    
     if len(prompt.strip()) < 5:
         return {"error": "프롬프트가 너무 짧습니다.", "code": "TOO_SHORT"}
 
-    # 원본 토큰 수 계산
+    # Step 2: 원본 토큰 수 계산
     original_tokens = count_tokens(prompt)
-    
 
-    # Claude API 호출
+    # Step 3: Claude API 호출
     message = client.messages.create(
         model="claude-haiku-4-5-20251001",
         max_tokens=2048,
         messages=[
             {
                 "role": "user",
-"content": f"""당신은 LLM 프롬프트 최적화 전문가입니다. 비개발자가 작성한 복잡한 코딩·과제 프롬프트의 토큰 낭비를 줄이는 데 특화되어 있습니다.
+                "content": f"""당신은 LLM 프롬프트 최적화 전문가입니다. 비개발자가 작성한 복잡한 코딩·과제 프롬프트의 토큰 낭비를 줄이는 데 특화되어 있습니다.
 
 [원본 프롬프트]
 \"\"\"
@@ -181,7 +202,10 @@ async def optimize(request: PromptRequest):
     {{
       "category": "AMBIGUOUS | FILLER | REDUNDANT | UNSTRUCTURED | CODE_DUMP | MISSING_CONSTRAINT | MONOLITHIC_REQUEST",
       "snippet": "문제가 된 핵심 표현만 (30자 미만 엄수. 초과하면 앞부분만 쓰고 '…' 처리. 예: '이메일이랑 비밀번호…')",
-      "explanation": "왜 토큰, 비용 낭비로 이어지는지 간결하게(1-2문장)"
+      "explanation": "왜 토큰, 비용 낭비로 이어지는지 간결하게(1-2문장)",
+      "replacement": "snippet을 대체할 구체적인 텍스트. 삭제만 하면 되는 경우 빈 문자열 \"\". 구조적 재구성(MONOLITHIC_REQUEST 등)이라 단일 대체문이 없으면 null",
+      "occurrence": "원본 프롬프트 내에서 이 snippet이 몇 번째로 등장하는 항목인지 (1부터 시작하는 정수). 동일 snippet이 여러 번 나올 때만 2 이상, 기본은 1",
+      "confidence": "이 지적이 실제 문제일 확신도 (0.0~1.0 사이 숫자). 명백한 문제면 0.9 이상, 애매하면 0.5~0.7"
     }}
   ]
 }}
@@ -192,6 +216,7 @@ async def optimize(request: PromptRequest):
 - issues 배열은 최소 0개, 최대 5개. 가장 중요한 문제부터.
 - issues=[]는 "분석 결과 개선할 점이 없음"을 의미한다. 칸을 채우기 위해 사소하거나 억지스러운 문제를 만들지 말 것. 정말 없으면 빈 배열로 둘 것.
 - "입력이 너무 짧거나 무의미함"은 이 단계에서 판단하지 않는다(백엔드 길이 검증이 선행 차단). 따라서 짧다는 이유만으로 issues를 비우지 말 것. 짧은 입력이라도 분석은 정상 수행하고, 문제가 있으면 기록할 것.
+- snippet은 반드시 [원본 프롬프트]에 실제로 등장하는 문자열 그대로 인용할 것. 지어내거나 의역하지 말 것 (원본에 없는 snippet은 백엔드에서 자동 폐기됨).
 
 [카테고리 정의 — 우선순위 순]
 
@@ -253,49 +278,90 @@ async def optimize(request: PromptRequest):
 8. "(예: ...)", "[입력 필요]", "~등"은 사용자의 선택권을 열어둔 의도된 장치다.
 이를 "확정하라"고 지적하지 말 것. 이미 올바른 처리다.
 
-이제 위 입력 프롬프트를 분석하여 JSON으로만 응답하세요."""            }
+이제 위 입력 프롬프트를 분석하여 JSON으로만 응답하세요."""
+            }
         ]
     )
 
-    # 응답 파싱
+    # Step 4: 응답 파싱
     try:
         print("Claude 응답:", message.content[0].text)
         response_text = message.content[0].text.strip()
-        # 첫 번째 { 부터 마지막 } 까지만 추출
         start = response_text.find("{")
         end = response_text.rfind("}") + 1
         if start != -1 and end != 0:
             response_text = response_text[start:end]
         result = json.loads(response_text)
     except (json.JSONDecodeError, IndexError):
-        # JSON 파싱 실패 시 fallback
         return {
             "error": "최적화 실패. 다시 시도해주세요.",
             "original_tokens": original_tokens,
         }
 
-    # 최적화 후 토큰 수 계산
+    # Step 5: 최적화 후 토큰 수 계산
     optimized_tokens = count_tokens(result["optimized"])
     saved_tokens = original_tokens - optimized_tokens
     saved_percent = round((saved_tokens / original_tokens) * 100, 1) if original_tokens > 0 else 0
 
-    # 비용 계산
+    # Step 6: 비용 계산
     costs = calculate_costs(original_tokens, optimized_tokens)
 
-    # 카테고리별 가이드 매칭
+    # Step 7: 카테고리별 가이드 매칭 + v5 스키마 필드 보정 + snippet 원본 검증
     issues_with_guides = []
+    seen_snippets = {}  # occurrence 자동 계산용
+
     for issue in result.get("issues", []):
+        snippet = issue.get("snippet", "")
+
+        # snippet 원본 검증: 실제로 원본 프롬프트에 없으면 드롭 (환각 방지)
+        snippet_clean = snippet.rstrip("…").strip()
+        if snippet and (snippet not in prompt) and (not snippet_clean or snippet_clean not in prompt):
+            continue
+
         category = issue.get("category", "")
         guide = GUIDES.get(category, {})
-        issues_with_guides.append({
-            **issue,
-            "guide": guide
-        })
 
-    # 긍정 피드백
+        # v5 스키마 필드 기본값 보정 (Claude가 필드를 빠뜨렸을 경우 대비)
+        issue.setdefault("scope", infer_scope(category))
+        issue.setdefault("replacement", None)
+        issue.setdefault("confidence", 0.8)
+
+        # occurrence: 동일 snippet 등장 순서 자동 계산
+        seen_snippets[snippet] = seen_snippets.get(snippet, 0) + 1
+        issue.setdefault("occurrence", seen_snippets[snippet])
+
+        issues_with_guides.append({**issue, "guide": guide})
+
+    # Step 8: 긍정 피드백
     feedback = None
     if len(issues_with_guides) == 0:
         feedback = "✅ 잘 작성된 프롬프트예요! 개선할 부분이 없습니다."
+
+    # Step 9: 로그인한 유저면 히스토리 자동 저장
+    if authorization and authorization.startswith("Bearer "):
+        try:
+            token = authorization.replace("Bearer ", "")
+            payload = decode_token(token)
+            if payload.get("type") == "access":
+                user_id = int(payload.get("sub"))
+                db = SessionLocal()
+                try:
+                    history = PromptHistory(
+                        user_id=user_id,
+                        original_prompt=prompt,
+                        optimized_prompt=result["optimized"],
+                        original_tokens=original_tokens,
+                        optimized_tokens=optimized_tokens,
+                        saved_tokens=saved_tokens,
+                        saved_percent=saved_percent,
+                        issue_count=len(issues_with_guides),
+                    )
+                    db.add(history)
+                    db.commit()
+                finally:
+                    db.close()
+        except Exception:
+            pass  # 히스토리 저장 실패해도 optimize 결과는 정상 반환
 
     return {
         "original_tokens": original_tokens,
