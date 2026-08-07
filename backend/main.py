@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -6,6 +6,15 @@ import anthropic
 import tiktoken
 import os
 import json
+from history import router as history_router
+from models import PromptHistory
+from database import get_db, SessionLocal
+from sqlalchemy.orm import Session
+from auth import decode_token
+from jose import JWTError
+from models import PromptHistory
+from database import SessionLocal
+from auth import decode_token
 
 load_dotenv()
 
@@ -119,7 +128,10 @@ def root():
     return {"status": "ok", "message": "PromptForge API"}
 
 @app.post("/optimize")
-async def optimize(request: PromptRequest):
+async def optimize(
+    request: PromptRequest,
+    authorization: str = Header(None)
+):
     prompt = request.prompt
     # Step 1: 룰 기반 사전 차단
     if not prompt or not prompt.strip():
@@ -296,6 +308,32 @@ async def optimize(request: PromptRequest):
     feedback = None
     if len(issues_with_guides) == 0:
         feedback = "✅ 잘 작성된 프롬프트예요! 개선할 부분이 없습니다."
+
+    # 로그인한 유저면 히스토리 자동 저장
+    if authorization and authorization.startswith("Bearer "):
+        try:
+            token = authorization.replace("Bearer ", "")
+            payload = decode_token(token)
+            if payload.get("type") == "access":
+                user_id = int(payload.get("sub"))
+                db = SessionLocal()
+                try:
+                    history = PromptHistory(
+                        user_id=user_id,
+                        original_prompt=prompt,
+                        optimized_prompt=result["optimized"],
+                        original_tokens=original_tokens,
+                        optimized_tokens=optimized_tokens,
+                        saved_tokens=saved_tokens,
+                        saved_percent=saved_percent,
+                        issue_count=len(issues_with_guides),
+                    )
+                    db.add(history)
+                    db.commit()
+                finally:
+                    db.close()
+        except Exception:
+            pass  # 히스토리 저장 실패해도 optimize 결과는 정상 반환
 
     return {
         "original_tokens": original_tokens,
