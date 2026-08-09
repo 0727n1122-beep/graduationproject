@@ -26,3 +26,9 @@ typing-inspection==0.4.2
 typing_extensions==4.15.0
 urllib3==2.6.3
 uvicorn==0.39.0
+python-jose[cryptography]==3.5.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+sqlalchemy==2.0.51
+python-multipart==0.0.20
+pydantic[email]==2.13.4
