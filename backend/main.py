@@ -367,13 +367,14 @@ MISSING_CONSTRAINT는 issues 배열에 넣지 않는다. missing_constraints 배
     fallback_id_counter = 0
 
     for issue in result.get("issues", []):
-        snippet = issue.get("snippet", "")
-
         # snippet 원본 검증: 실제로 원본 프롬프트에 없으면 드롭 (환각 방지)
         # CODE_DUMP는 snippet이 길어 줄바꿈 등 사소한 차이가 날 수 있어 정규화 후 비교
+        snippet = issue.get("snippet") or ""  # snippet:null 대응 — get()의 default는 키가 없을 때만 적용되고 값이 None이면 안 먹음
         snippet_clean = snippet.rstrip("…").strip()
         if snippet and (snippet not in prompt) and (not snippet_clean or snippet_clean not in prompt):
             continue
+        if not snippet:
+            continue  # snippet 자체가 없으면(원래 null이었던 경우 포함) 이 issue는 의미 없음, 드롭
 
         category = issue.get("category", "")
         guide = GUIDES.get(category, {})
