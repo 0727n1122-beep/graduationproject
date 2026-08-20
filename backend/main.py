@@ -115,7 +115,7 @@ GUIDES = {
 }
 
 # ── 카테고리 → scope 매핑 ──────────────────────────────────
-STRUCTURAL_CATEGORIES = {"MONOLITHIC_REQUEST", "UNSTRUCTURED", "CODE_DUMP"}
+STRUCTURAL_CATEGORIES = {"MONOLITHIC_REQUEST", "UNSTRUCTURED"}
 
 def infer_scope(category: str) -> str:
     """카테고리로 scope 자동 추론 (inline vs structural)"""
@@ -316,12 +316,11 @@ async def optimize(
 
     # Step 7: 카테고리별 가이드 매칭 + v5 스키마 필드 보정 + snippet 원본 검증
     issues_with_guides = []
-    seen_snippets = {}  # occurrence 자동 계산용
+    missing_constraints = []  # MISSING_CONSTRAINT 별도 배열
+    seen_snippets = {}
 
     for issue in result.get("issues", []):
         snippet = issue.get("snippet", "")
-
-        # snippet 원본 검증: 실제로 원본 프롬프트에 없으면 드롭 (환각 방지)
         snippet_clean = snippet.rstrip("…").strip()
         if snippet and (snippet not in prompt) and (not snippet_clean or snippet_clean not in prompt):
             continue
@@ -329,47 +328,49 @@ async def optimize(
         category = issue.get("category", "")
         guide = GUIDES.get(category, {})
 
-        # v5 스키마 필드 기본값 보정 (Claude가 필드를 빠뜨렸을 경우 대비)
         issue.setdefault("scope", infer_scope(category))
         issue.setdefault("replacement", None)
         issue.setdefault("confidence", 0.8)
 
-        # occurrence: 동일 snippet 등장 순서 자동 계산
         seen_snippets[snippet] = seen_snippets.get(snippet, 0) + 1
         issue.setdefault("occurrence", seen_snippets[snippet])
 
-        issues_with_guides.append({**issue, "guide": guide})
+        # MISSING_CONSTRAINT는 별도 배열로 분리
+        if category == "MISSING_CONSTRAINT":
+            missing_constraints.append({**issue, "guide": guide})
+        else:
+            issues_with_guides.append({**issue, "guide": guide})
 
-    # Step 8: 긍정 피드백
+        # Step 8: 긍정 피드백
     feedback = None
-    if len(issues_with_guides) == 0:
+    if len(issues_with_guides) == 0 and len(missing_constraints) == 0:
         feedback = "✅ 잘 작성된 프롬프트예요! 개선할 부분이 없습니다."
 
-    # Step 9: 로그인한 유저면 히스토리 자동 저장
-    if authorization and authorization.startswith("Bearer "):
-        try:
-            token = authorization.replace("Bearer ", "")
-            payload = decode_token(token)
-            if payload.get("type") == "access":
-                user_id = int(payload.get("sub"))
-                db = SessionLocal()
-                try:
-                    history = PromptHistory(
-                        user_id=user_id,
-                        original_prompt=prompt,
-                        optimized_prompt=result["optimized"],
-                        original_tokens=original_tokens,
-                        optimized_tokens=optimized_tokens,
-                        saved_tokens=saved_tokens,
-                        saved_percent=saved_percent,
-                        issue_count=len(issues_with_guides),
-                    )
-                    db.add(history)
-                    db.commit()
-                finally:
-                    db.close()
-        except Exception:
-            pass  # 히스토리 저장 실패해도 optimize 결과는 정상 반환
+        # Step 9: 로그인한 유저면 히스토리 자동 저장
+        if authorization and authorization.startswith("Bearer "):
+            try:
+                token = authorization.replace("Bearer ", "")
+                payload = decode_token(token)
+                if payload.get("type") == "access":
+                    user_id = int(payload.get("sub"))
+                    db = SessionLocal()
+                    try:
+                        history = PromptHistory(
+                            user_id=user_id,
+                            original_prompt=prompt,
+                            optimized_prompt=result["optimized"],
+                            original_tokens=original_tokens,
+                            optimized_tokens=optimized_tokens,
+                            saved_tokens=saved_tokens,
+                            saved_percent=saved_percent,
+                            issue_count=len(issues_with_guides),
+                        )
+                        db.add(history)
+                        db.commit()
+                    finally:
+                        db.close()
+            except Exception:
+                pass  # 히스토리 저장 실패해도 optimize 결과는 정상 반환
 
     return {
         "original_tokens": original_tokens,
@@ -378,6 +379,7 @@ async def optimize(
         "saved_percent": saved_percent,
         "optimized_prompt": result["optimized"],
         "issues": issues_with_guides,
+        "missing_constraints": missing_constraints,  
         "feedback": feedback,
         "costs": costs,
     }
