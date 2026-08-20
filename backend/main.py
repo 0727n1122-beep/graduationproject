@@ -41,6 +41,8 @@ app.add_middleware(
 app.include_router(auth_router)       # /auth/register, /auth/login 등
 app.include_router(history_router)    # /history
 app.include_router(error_coach_router)  # /error-coach
+from simulate import router as simulate_router
+app.include_router(simulate_router)
 
 # ── Anthropic 클라이언트 ───────────────────────────────────
 client = anthropic.Anthropic(
