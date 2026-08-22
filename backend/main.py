@@ -7,6 +7,7 @@ import anthropic
 import tiktoken
 import os
 import json
+import re
 
 # ── 환경변수 로드 ──────────────────────────────────────────
 load_dotenv()
@@ -125,6 +126,21 @@ def infer_scope(category: str) -> str:
     """카테고리로 scope 자동 추론 (inline vs structural)"""
     return "structural" if category in STRUCTURAL_CATEGORIES else "inline"
 
+def find_verbatim(snippet: str, prompt: str):
+    """모델이 만든 snippet이 원본에 정확히 없어도, 공백류(개행·탭·연속 스페이스)
+    차이만 있으면 원본에서 실제 매칭되는 부분(개행 포함, 완전한 verbatim)을 찾아 반환한다.
+    (MONOLITHIC_REQUEST/UNSTRUCTURED처럼 snippet이 여러 줄에 걸치는 카테고리에서, 모델이
+    원본의 줄바꿈을 공백으로 재현하는 바람에 verbatim 검증에 걸려 이슈 전체가 드롭되던
+    문제 — 실측 재현됨). 못 찾으면 None."""
+    words = [w for w in re.split(r"\s+", snippet.strip()) if w]
+    if not words:
+        return None
+    if snippet in prompt:
+        return snippet
+    pattern = r"\s+".join(re.escape(w) for w in words)
+    m = re.search(pattern, prompt)
+    return m.group(0) if m else None
+
 # ── 비용 계산 함수 ─────────────────────────────────────────
 def calculate_costs(input_tokens: int, output_tokens: int) -> dict:
     costs = {}
@@ -163,7 +179,7 @@ async def optimize(
     # Step 3: Claude API 호출
     message = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=2048,
+        max_tokens=4096,
         messages=[
             {
                 "role": "user",
@@ -388,18 +404,26 @@ MISSING_CONSTRAINT는 issues 배열에 넣지 않는다. missing_constraints 배
 
     for issue in result.get("issues", []):
         # snippet 원본 검증: 실제로 원본 프롬프트에 없으면 드롭 (환각 방지)
-        # CODE_DUMP는 snippet이 길어 줄바꿈 등 사소한 차이가 날 수 있어 정규화 후 비교
         snippet = issue.get("snippet") or ""  # snippet:null 대응 — get()의 default는 키가 없을 때만 적용되고 값이 None이면 안 먹음
-        snippet_clean = snippet.rstrip("…").strip()
-        if snippet and (snippet not in prompt) and (not snippet_clean or snippet_clean not in prompt):
-            continue
         if not snippet:
             continue  # snippet 자체가 없으면(원래 null이었던 경우 포함) 이 issue는 의미 없음, 드롭
-        # "…"로 잘린 snippet은 verbatim이 아니라 프론트 indexOf가 못 찾음 — 검증 통과한
-        # 실제 매칭 가능한 버전(snippet_clean)으로 교체해서 내려준다. 원본이 그대로
-        # prompt에 있으면 snippet == snippet_clean이라 이 줄은 무해하다.
-        if snippet not in prompt and snippet_clean in prompt:
+
+        # "…"로 잘린 snippet은 verbatim이 아니라 프론트 indexOf가 못 찾음 — 말줄임표만 벗겨내고 재비교
+        snippet_clean = snippet.rstrip("…").strip()
+        if snippet in prompt:
+            pass  # 그대로 사용
+        elif snippet_clean and snippet_clean in prompt:
             snippet = snippet_clean
+        else:
+            # 정확 매칭도, "…" 제거 매칭도 실패 — 마지막으로 공백류(개행·탭·연속 스페이스)
+            # 차이만 있는지 확인. MONOLITHIC_REQUEST/UNSTRUCTURED처럼 snippet이 여러 줄에
+            # 걸치는 카테고리에서, 모델이 원본의 줄바꿈을 공백으로 재현해 이슈 전체가
+            # 조용히 드롭되던 문제가 실측으로 확인됨 — find_verbatim이 원본에서 실제
+            # 매칭되는 정확한 부분(개행 포함)을 찾아준다. 그마저 실패하면 환각으로 보고 드롭.
+            verbatim = find_verbatim(snippet_clean or snippet, prompt)
+            if not verbatim:
+                continue
+            snippet = verbatim
         issue["snippet"] = snippet
 
         category = issue.get("category", "")
