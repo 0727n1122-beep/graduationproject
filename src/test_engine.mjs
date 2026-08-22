@@ -74,8 +74,13 @@ console.log("\n=== 4. CODE_DUMP / UNSTRUCTURED replacement 톤 규칙 ===");
 for (const fx of FIXTURES) {
   for (const issue of fx.issues) {
     if (issue.category === "CODE_DUMP") {
-      check(`[${fx.id}] CODE_DUMP replacement는 "[코드 요약]"로 시작`, () => {
-        assert.ok(issue.replacement && issue.replacement.startsWith("[코드 요약]"));
+      check(`[${fx.id}] CODE_DUMP replacement는 "[진단]" 또는 "[코드 설명]"으로 시작`, () => {
+        assert.ok(issue.replacement && /^\[(진단|코드 설명)\]/.test(issue.replacement));
+      });
+      check(`[${fx.id}] CODE_DUMP replacement가 원본 코드를 삭제하지 않고 보존함`, () => {
+        assert.ok(issue._testExpectCodeFragment, "테스트 메타데이터(_testExpectCodeFragment) 누락");
+        assert.ok(issue.replacement.includes(issue._testExpectCodeFragment),
+          "replacement에 원본 코드 조각이 verbatim으로 남아있지 않음 — 코드가 삭제/변형됨");
       });
     }
     if (issue.category === "FILLER") {
@@ -272,6 +277,15 @@ check("드롭된 이슈가 있어도 남은 이슈를 id로 정확히 찾을 수
   assert.ok(byId.has("keep-me-2"));
   assert.ok(!byId.has("keep-me-1"));
 });
+
+console.log("\n=== 12. MIXED 픽스처 — 실제로 서로 다른 카테고리가 섞여 있는지 ===");
+for (const fx of FIXTURES) {
+  if (fx.group !== "MIXED") continue;
+  check(`[${fx.id}] issue 카테고리가 2종 이상 혼합됨`, () => {
+    const cats = new Set(fx.issues.map((i) => i.category));
+    assert.ok(cats.size >= 2, `카테고리가 ${cats.size}종뿐임: ${[...cats].join(",")}`);
+  });
+}
 
 console.log("\n" + "=".repeat(60));
 console.log(`결과: ${pass}개 통과, ${fail}개 실패`);

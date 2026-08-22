@@ -216,7 +216,7 @@ async def optimize(
       "category": "AMBIGUOUS | FILLER | REDUNDANT | UNSTRUCTURED | CODE_DUMP | MONOLITHIC_REQUEST",
       "snippet": "문제가 된 부분의 원문 그대로. CODE_DUMP는 코드 전체, UNSTRUCTURED는 흩어진 요구사항 전체를 그대로(둘 다 길이 제한 없음). 그 외 카테고리는 핵심 표현만 30자 미만 엄수(초과 시 앞부분만 쓰고 '…' 처리)",
       "explanation": "왜 토큰, 비용 낭비로 이어지는지 간결하게(1-2문장)",
-      "replacement": "적용 시 그 자리에 들어갈 텍스트. 삭제면 빈 문자열 \"\". CODE_DUMP는 4장 규칙에 따른 요약문, UNSTRUCTURED는 번호 리스트로 재구성한 문장. scope가 structural(MONOLITHIC_REQUEST)이면 null",
+      "replacement": "적용 시 그 자리에 들어갈 텍스트. 삭제면 빈 문자열 \"\". CODE_DUMP는 진단 문구 뒤에 원본 코드를 verbatim으로 이어붙인 것(코드 삭제·요약 금지, 아래 카테고리 정의 참고), UNSTRUCTURED는 번호 리스트로 재구성한 문장. scope가 structural(MONOLITHIC_REQUEST)이면 null",
       "occurrence": "원본 프롬프트 내에서 이 snippet이 몇 번째로 등장하는지 (0부터 시작). 같은 snippet이 여러 번 나오면 등장 순서대로 0, 1, 2...를 각각 부여",
       "steps": "MONOLITHIC_REQUEST일 때만: [{{\"title\": \"단계명(짧게)\", \"desc\": \"1문장 설명\"}}, ...] 3~6개. 다른 카테고리는 null"
     }}
@@ -252,11 +252,24 @@ MISSING_CONSTRAINT는 issues 배열에 넣지 않는다. missing_constraints 배
   대량의 코드를 통째로 붙여넣음. 보통 에러 위치와 메시지만 필요.
   예: 200줄 전체 + "고쳐줘" → 해당 줄 + 에러 메시지만으로 충분.
 
-  [replacement 생성 규칙] 사용자에게 "잘라서 보내라"고 시키지 말고, AI가 직접 요약한다.
-  - 에러 메시지가 함께 있으면: 에러 원인 + 관련 함수 중심으로 요약
-  - 에러 메시지가 없으면: 그 코드가 무엇을 하는지 1문장으로 요약
+  [replacement 생성 규칙] 코드 본문은 절대 삭제·요약·축약·수정하지 않는다. verbatim
+  그대로(문자 하나도 안 바꾸고) replacement 안에 포함시킨다 — 다음 턴에서 실제로
+  코드를 고치려면 원본이 반드시 남아 있어야 하기 때문이다. 축약 대상은 코드가 아니라
+  코드를 둘러싼 장황한 텍스트다(에러 스택 트레이스 원문, 재현용으로 붙인 중복 호출부 등).
+  - 에러 메시지가 함께 있으면: 에러 원인 + 관련 함수를 한 줄로 진단하고
+    "[진단] {{한 줄 진단}}" 뒤에 빈 줄을 두고 원본 코드를 그대로 이어붙인다.
+  - 에러 메시지가 없으면: 코드가 무엇을 하는지 한 줄로 설명하고
+    "[코드 설명] {{한 줄 설명}}" 뒤에 빈 줄을 두고 원본 코드를 그대로 이어붙인다.
   - 어투는 설명형 명사구. "~해주세요" 요청 어투를 쓰지 않는다(원칙 7의 예외).
-  - 형식: "[코드 요약] {{요약 내용}}"
+  - 진단하다가 버그로 보이는 부분을 발견해도 그 수정 사항을 코드 블록 안에 직접
+    반영해서 보여주지 말 것. 수정 제안은 오직 "[진단]" 한 줄 텍스트로만 말로 설명하고,
+    그 아래 이어붙이는 코드는 원본과 100% 동일해야 한다. 이 카테고리는 UI에서 사용자가
+    코드를 검토·수정할 방법이 없어(무조건 그대로 반영됨), 코드를 몰래 고쳐서 보여주면
+    사용자가 알아채지 못한 채 바뀐 코드가 다음 요청에 그대로 들어간다.
+    금지 예: "HAVING total > 100000"을 진단하면서 "HAVING SUM(amount) > 100000"으로
+    슬쩍 고쳐서 보여주는 것 — 고쳐야 한다는 것 자체는 [진단] 문구로만 말할 것.
+  - 코드 안에 질문과 무관해 보이는 부분이 섞여 있어도 제외 여부가 불확실하면 전부
+    유지한다 — 정보 손실이 토큰 절감보다 항상 우선한다.
 
 ★ MONOLITHIC_REQUEST (분할 없는 통합 요청) — 비개발자 특유의 패턴
   단계적으로 만들어야 할 복잡한 개발을 한 번에 통째로 요청.
@@ -323,7 +336,10 @@ MISSING_CONSTRAINT는 issues 배열에 넣지 않는다. missing_constraints 배
 2. 단순 입력에 강제로 구조·제약을 추가하지 말 것. optimized가 원본보다 길어지면 안 됨.
 3. 임의로 도구·수치·버전을 확정하지 말 것. "(예: ...)" 또는 "[입력 필요]" 사용.
 4. "혹시", "가능하시다면"은 제거하되, "~해주세요" 같은 정중함은 유지.
-5. 코드 덤프는 분리·요약 제안. 전체 코드를 그대로 보존하지 말 것.
+5. 코드 덤프는 코드 본문을 절대 삭제·요약·수정하지 말 것. 버그로 보이는 부분을
+   발견해도 코드 자체는 문자 하나 건드리지 말고, 진단 문구만 코드 위에 텍스트로
+   덧붙일 것. 코드는 verbatim 그대로 보존할 것 (원본이 사라지거나 몰래 바뀌면
+   사용자가 모르는 채 다음 턴에 변경된 코드가 그대로 들어감).
 6. 여러 기능을 한 번에 요청한 경우(MONOLITHIC_REQUEST), optimized는 전체를 한꺼번에
    만들라고 하지 말 것. 의존성에 따라 단계로 나눈 뒤, "한 단계씩 완성하며 각 단계가
    동작하는지 확인하고 다음으로 진행"하도록 지시하고 "첫 단계부터 시작"하라고 명시할 것.
@@ -405,6 +421,16 @@ MISSING_CONSTRAINT는 issues 배열에 넣지 않는다. missing_constraints 배
         issue.setdefault("replacement", None)
         if category != "MONOLITHIC_REQUEST":
             issue["steps"] = None  # MONOLITHIC 아니면 항상 null로 고정
+
+        # CODE_DUMP verbatim 강제: 모델이 진단하다가 버그로 보이는 부분을 코드 안에서
+        # 직접 "고쳐서" 보여주는 경우가 실측됨(예: SQL HAVING 절 alias를 슬쩍 수정) —
+        # 프롬프트 지시만으로는 완전히 막지 못해(N=8 중 4회 재현) 백엔드가 강제한다.
+        # 진단 문구(첫 "\n\n" 앞부분)만 모델 것을 살리고, 그 뒤 코드는 모델 출력을
+        # 신뢰하지 않고 이미 원본 검증을 마친 snippet으로 무조건 치환한다.
+        if category == "CODE_DUMP" and issue["replacement"]:
+            diagnosis, sep, _ = issue["replacement"].partition("\n\n")
+            if sep:
+                issue["replacement"] = diagnosis + "\n\n" + snippet
 
         # occurrence: 동일 snippet 등장 순서 자동 계산 (0-based)
         issue["occurrence"] = seen_snippets.get(snippet, 0)
