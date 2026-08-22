@@ -41,6 +41,8 @@ app.add_middleware(
 app.include_router(auth_router)       # /auth/register, /auth/login 등
 app.include_router(history_router)    # /history
 app.include_router(error_coach_router)  # /error-coach
+from simulate import router as simulate_router
+app.include_router(simulate_router)
 
 # ── Anthropic 클라이언트 ───────────────────────────────────
 client = anthropic.Anthropic(
@@ -397,6 +399,10 @@ MISSING_CONSTRAINT는 issues 배열에 넣지 않는다. missing_constraints 배
         issue["occurrence"] = seen_snippets.get(snippet, 0)
         seen_snippets[snippet] = seen_snippets.get(snippet, 0) + 1
 
+        # MISSING_CONSTRAINT는 issues에 오지 않는다(별도 missing_constraints 배열, 아래 Step 7-1).
+        # 혹시 프롬프트 드리프트로 여기 섞여 들어와도 스키마가 다르므로 issues에 넣지 않고 버린다.
+        if category == "MISSING_CONSTRAINT":
+            continue
         issues_with_guides.append({**issue, "guide": guide})
 
     # Step 7-1: missing_constraints 검증 + 조작 방지 가드
