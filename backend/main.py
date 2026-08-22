@@ -117,7 +117,9 @@ GUIDES = {
 }
 
 # ── 카테고리 → scope 매핑 ──────────────────────────────────
-STRUCTURAL_CATEGORIES = {"MONOLITHIC_REQUEST", "UNSTRUCTURED"}
+# UNSTRUCTURED는 사용자 상호작용(토글 선택) 없이 텍스트가 그대로 바뀌는 경우라 inline.
+# MONOLITHIC_REQUEST만 "계획 확인 → 단계 토글"이라는 상호작용이 있어 structural.
+STRUCTURAL_CATEGORIES = {"MONOLITHIC_REQUEST"}
 
 def infer_scope(category: str) -> str:
     """카테고리로 scope 자동 추론 (inline vs structural)"""
@@ -177,7 +179,7 @@ async def optimize(
 - 요구사항이 번호나 구조로 이미 정리되어 있음
 - 모호한 지시어·군더더기 없음
 - 필수 조건이 명시되어 있거나 "[입력 필요]"/"(예: ...)" 같은 의도된 placeholder로 표시됨
-이 경우: optimized = 원본 그대로. issues = []. 아래 1~2단계는 건너뛴다.
+이 경우: optimized = 원본 그대로. issues = []. missing_constraints = []. 아래 1~2단계는 건너뛴다.
 "더 나아질 수 있다"는 이유로 이미 좋은 프롬프트를 재작성하지 말 것 — 그 자체가 오류다.
 
 [1단계: 입력 복잡도 판정]
@@ -210,15 +212,28 @@ async def optimize(
   "optimized": "최적화된 프롬프트 전문 (한국어)",
   "issues": [
     {{
-      "category": "AMBIGUOUS | FILLER | REDUNDANT | UNSTRUCTURED | CODE_DUMP | MISSING_CONSTRAINT | MONOLITHIC_REQUEST",
-      "snippet": "문제가 된 핵심 표현만 (30자 미만 엄수. 초과하면 앞부분만 쓰고 '…' 처리. 예: '이메일이랑 비밀번호…')",
+      "id": "이슈 고유 id. i1부터 순번 (i1, i2, i3...)",
+      "category": "AMBIGUOUS | FILLER | REDUNDANT | UNSTRUCTURED | CODE_DUMP | MONOLITHIC_REQUEST",
+      "snippet": "문제가 된 부분의 원문 그대로. CODE_DUMP는 코드 전체, UNSTRUCTURED는 흩어진 요구사항 전체를 그대로(둘 다 길이 제한 없음). 그 외 카테고리는 핵심 표현만 30자 미만 엄수(초과 시 앞부분만 쓰고 '…' 처리)",
       "explanation": "왜 토큰, 비용 낭비로 이어지는지 간결하게(1-2문장)",
-      "replacement": "snippet을 대체할 구체적인 텍스트. 삭제만 하면 되는 경우 빈 문자열 \"\". 구조적 재구성(MONOLITHIC_REQUEST 등)이라 단일 대체문이 없으면 null",
-      "occurrence": "원본 프롬프트 내에서 이 snippet이 몇 번째로 등장하는 항목인지 (1부터 시작하는 정수). 동일 snippet이 여러 번 나올 때만 2 이상, 기본은 1",
-      "confidence": "이 지적이 실제 문제일 확신도 (0.0~1.0 사이 숫자). 명백한 문제면 0.9 이상, 애매하면 0.5~0.7"
+      "replacement": "적용 시 그 자리에 들어갈 텍스트. 삭제면 빈 문자열 \"\". CODE_DUMP는 4장 규칙에 따른 요약문, UNSTRUCTURED는 번호 리스트로 재구성한 문장. scope가 structural(MONOLITHIC_REQUEST)이면 null",
+      "occurrence": "원본 프롬프트 내에서 이 snippet이 몇 번째로 등장하는지 (0부터 시작). 같은 snippet이 여러 번 나오면 등장 순서대로 0, 1, 2...를 각각 부여",
+      "steps": "MONOLITHIC_REQUEST일 때만: [{{\"title\": \"단계명(짧게)\", \"desc\": \"1문장 설명\"}}, ...] 3~6개. 다른 카테고리는 null"
+    }}
+  ],
+  "missing_constraints": [
+    {{
+      "id": "누락 조건 고유 id. mc1부터 순번 (mc1, mc2, mc3...). issues의 id(i1, i2...)와 접두사가 다르니 섞어 쓰지 말 것",
+      "field": "빠진 조건 이름 (예: '출력 언어', '코드 형식')",
+      "confidence": "high | rec | low — 4장 기준 준수",
+      "suggested_value": "짧은 값 (예: 'Python 3.12'). confidence가 low면 반드시 null",
+      "suggested_phrase": "프롬프트에 그대로 삽입될 완성 문장 (예: 'Python 3.12로 작성해주세요.'). confidence가 low면 반드시 null",
+      "options": "confidence가 low일 때만: [{{\"label\": \"선택지 이름\", \"phrase\": \"프롬프트에 삽입될 문장 또는 null\"}}, ...] 2~4개. high/rec는 null"
     }}
   ]
 }}
+
+MISSING_CONSTRAINT는 issues 배열에 넣지 않는다. missing_constraints 배열에만 기록한다.
 
 [출력 규칙 — 절대 준수]
 - 순수 JSON 객체만 출력. 백틱(```), "json" 표시, 설명 문장, 인사말 일절 금지.
@@ -227,12 +242,21 @@ async def optimize(
 - issues=[]는 "분석 결과 개선할 점이 없음"을 의미한다. 칸을 채우기 위해 사소하거나 억지스러운 문제를 만들지 말 것. 정말 없으면 빈 배열로 둘 것.
 - "입력이 너무 짧거나 무의미함"은 이 단계에서 판단하지 않는다(백엔드 길이 검증이 선행 차단). 따라서 짧다는 이유만으로 issues를 비우지 말 것. 짧은 입력이라도 분석은 정상 수행하고, 문제가 있으면 기록할 것.
 - snippet은 반드시 [원본 프롬프트]에 실제로 등장하는 문자열 그대로 인용할 것. 지어내거나 의역하지 말 것 (원본에 없는 snippet은 백엔드에서 자동 폐기됨).
+- id는 issues 배열 내에서 유일해야 한다 (i1, i2, i3... 중복 금지).
+- missing_constraints의 id도 배열 내에서 유일해야 한다 (mc1, mc2, mc3... 중복 금지). issues의 id와 같은 값을 재사용하지 말 것.
+- missing_constraints의 confidence가 low인데 suggested_value나 suggested_phrase를 채우는 것은 "없는 조건을 확정값처럼 제시"하는 것과 같다 — 절대 금지. low는 반드시 null, options로만 답할 것.
 
 [카테고리 정의 — 우선순위 순]
 
 ★ CODE_DUMP (코드 전체 전송) — 비개발자 토큰 낭비의 최대 원인
   대량의 코드를 통째로 붙여넣음. 보통 에러 위치와 메시지만 필요.
   예: 200줄 전체 + "고쳐줘" → 해당 줄 + 에러 메시지만으로 충분.
+
+  [replacement 생성 규칙] 사용자에게 "잘라서 보내라"고 시키지 말고, AI가 직접 요약한다.
+  - 에러 메시지가 함께 있으면: 에러 원인 + 관련 함수 중심으로 요약
+  - 에러 메시지가 없으면: 그 코드가 무엇을 하는지 1문장으로 요약
+  - 어투는 설명형 명사구. "~해주세요" 요청 어투를 쓰지 않는다(원칙 7의 예외).
+  - 형식: "[코드 요약] {{요약 내용}}"
 
 ★ MONOLITHIC_REQUEST (분할 없는 통합 요청) — 비개발자 특유의 패턴
   단계적으로 만들어야 할 복잡한 개발을 한 번에 통째로 요청.
@@ -243,21 +267,45 @@ async def optimize(
   판별 테스트: 한 항목만 단독으로 완성해도 사용자가 의미 있게 확인·사용할 수
   있으면 '독립 기능'. 다른 항목 없이는 무의미하면 '단일 기능의 하위 요소' → 발동 안 함.
 
+  주의(구현 레이어 함정): "폼 UI 작성 → 입력 검증 → 서버 전송 → 응답 처리"처럼
+  하나의 기능을 만들 때 항상 거치는 일반적인 구현 단계를 나열한 것은 "독립 기능
+  여러 개"가 아니라 "기능 하나를 구현하는 순서"다. 요청에 만들려는 대상이 하나뿐이면
+  (예: 회원가입 하나), 그걸 구현하는 데 필요한 레이어가 몇 개든 발동하지 않는다.
+
   발동 O: "할 일 추가 + 완료 체크 + 삭제 + 저장" (각 동작이 독립적으로 확인 가능)
   발동 X: "다크모드 토글 + 설정 유지 + 전환 효과" → 모두 '다크모드' 하나의 구현 요소
   발동 X: "회원가입 입력 + 중복확인 + 형식검증 + 해시저장" → 모두 '회원가입' 단일 기능
+  발동 X: "회원가입 폼 + 입력 검증 + 서버 저장" → 구현 레이어 나열(위 주의 참고). '회원가입'
+    하나를 만드는 과정일 뿐, 로그인·게시판처럼 서로 다른 기능이 여러 개인 게 아니다.
 
   UNSTRUCTURED와 구분: UNSTRUCTURED는 요구가 "정리 안 됨"(번호화로 해결),
   MONOLITHIC_REQUEST는 독립 기능을 "한 번에 구현"하라는 것 자체가 문제(단계 분할로 해결).
+
+  [steps 생성 규칙] 발동 시 반드시 steps 배열을 채운다(3~6개).
+  - title: 짧은 단계명. 최종 프롬프트 문구 조립에 쓰이는 재료이므로 명사구로.
+  - desc: 1문장 설명. 계획 미리보기에만 쓰이고 최종 문구에는 안 들어감.
+  - 순서는 일반적 개발 흐름(데이터·구조 → 핵심 기능 → 부가 기능 → 스타일)을 따르되 도메인에 맞게 구성.
 
 ★ UNSTRUCTURED (흩어진 요구사항)
   여러 요구가 줄글로 섞여 LLM이 우선순위·관계를 추론해야 함.
   예: "A도 해주고 B도 하고 C도" → 번호 리스트화 필요.
 
-★ MISSING_CONSTRAINT (출력 조건 누락)
+  [replacement 생성 규칙] snippet(흩어진 요구 전체)을 번호 리스트로 재구성해서 그대로 대체한다.
+  예: "A도 해주고 B도 하고 C도" → "1) A 2) B 3) C". 사용자 선택 없이 그 자리에서 바로 바뀌는
+  단순 치환이다(MONOLITHIC_REQUEST처럼 단계를 나눠 순차 진행시키는 게 아님 — 그냥 정리만 함).
+
+★ MISSING_CONSTRAINT (출력 조건 누락) — issues가 아니라 missing_constraints 배열에 기록
   표현은 이해되나 필수 스펙(언어/버전/형식/길이)이 빠짐.
   예: "코드 짜줘" → 어떤 언어인지 미지정.
-  주의: 임의로 "Python"을 확정하지 말 것. "(예: Python 3.12)" 또는 "[입력 필요]" 사용.
+
+  [confidence 판정 기준]
+  - high: 원문 안에 확실한 단서가 있음 (예: 붙여넣은 코드가 이미 Python이라 언어가 확정적)
+  - rec: 단서는 없지만 업계 표준·상식적인 기본값이 있음 (예: 언어 미지정 시 Python)
+  - low: 단서도 표준값도 없는 순수 취향/선택 사항 (예: 반응형 브레이크포인트 기준)
+
+  high/rec는 suggested_value(짧은 값)와 suggested_phrase(완성 문장)를 반드시 채운다.
+  low는 suggested_value/suggested_phrase를 절대 채우지 말고(null), options로 2~4개
+  선택지를 제시한다. 확신 없는 값을 확정값처럼 제시하는 것은 "없는 조건 조작"이다.
 
 - AMBIGUOUS (모호한 지시어 또는 위임형)
   지시어: "이거", "그거", "다", "전부" / 위임형: "알아서", "적당히", "잘 해줘"
@@ -318,61 +366,121 @@ async def optimize(
 
     # Step 7: 카테고리별 가이드 매칭 + v5 스키마 필드 보정 + snippet 원본 검증
     issues_with_guides = []
-    missing_constraints = []  # MISSING_CONSTRAINT 별도 배열
-    seen_snippets = {}
+    seen_snippets = {}  # occurrence 자동 계산용 (0-based)
+    seen_ids = set()
+    fallback_id_counter = 0
 
     for issue in result.get("issues", []):
-        snippet = issue.get("snippet", "")
+        # snippet 원본 검증: 실제로 원본 프롬프트에 없으면 드롭 (환각 방지)
+        # CODE_DUMP는 snippet이 길어 줄바꿈 등 사소한 차이가 날 수 있어 정규화 후 비교
+        snippet = issue.get("snippet") or ""  # snippet:null 대응 — get()의 default는 키가 없을 때만 적용되고 값이 None이면 안 먹음
         snippet_clean = snippet.rstrip("…").strip()
         if snippet and (snippet not in prompt) and (not snippet_clean or snippet_clean not in prompt):
             continue
+        if not snippet:
+            continue  # snippet 자체가 없으면(원래 null이었던 경우 포함) 이 issue는 의미 없음, 드롭
+        # "…"로 잘린 snippet은 verbatim이 아니라 프론트 indexOf가 못 찾음 — 검증 통과한
+        # 실제 매칭 가능한 버전(snippet_clean)으로 교체해서 내려준다. 원본이 그대로
+        # prompt에 있으면 snippet == snippet_clean이라 이 줄은 무해하다.
+        if snippet not in prompt and snippet_clean in prompt:
+            snippet = snippet_clean
+        issue["snippet"] = snippet
 
         category = issue.get("category", "")
         guide = GUIDES.get(category, {})
 
+        # id: 없거나 중복이면 백엔드가 새로 부여 (배열 인덱스 대신 안정적 참조용)
+        issue_id = issue.get("id")
+        if not issue_id or issue_id in seen_ids:
+            # 앞 항목이 이미 i1을 쓰고 있을 수 있으므로 비어 있는 번호가 나올 때까지 증가
+            fallback_id_counter += 1
+            while f"i{fallback_id_counter}" in seen_ids:
+                fallback_id_counter += 1
+            issue_id = f"i{fallback_id_counter}"
+        seen_ids.add(issue_id)
+        issue["id"] = issue_id
+
+        # v5 스키마 필드 기본값 보정 (Claude가 필드를 빠뜨렸을 경우 대비)
         issue.setdefault("scope", infer_scope(category))
         issue.setdefault("replacement", None)
-        issue.setdefault("confidence", 0.8)
+        if category != "MONOLITHIC_REQUEST":
+            issue["steps"] = None  # MONOLITHIC 아니면 항상 null로 고정
 
+        # occurrence: 동일 snippet 등장 순서 자동 계산 (0-based)
+        issue["occurrence"] = seen_snippets.get(snippet, 0)
         seen_snippets[snippet] = seen_snippets.get(snippet, 0) + 1
-        issue.setdefault("occurrence", seen_snippets[snippet])
 
-        # MISSING_CONSTRAINT는 별도 배열로 분리
+        # MISSING_CONSTRAINT는 issues에 오지 않는다(별도 missing_constraints 배열, 아래 Step 7-1).
+        # 혹시 프롬프트 드리프트로 여기 섞여 들어와도 스키마가 다르므로 issues에 넣지 않고 버린다.
         if category == "MISSING_CONSTRAINT":
-            missing_constraints.append({**issue, "guide": guide})
-        else:
-            issues_with_guides.append({**issue, "guide": guide})
+            continue
+        issues_with_guides.append({**issue, "guide": guide})
 
-        # Step 8: 긍정 피드백
+    # Step 7-1: missing_constraints 검증 + 조작 방지 가드
+    missing_constraints = []
+    seen_mc_ids = set()
+    mc_fallback_id_counter = 0
+
+    for mc in result.get("missing_constraints", []):
+        if not mc.get("field"):
+            continue  # field 없는 항목은 의미 없음, 드롭
+
+        # id: 없거나 중복이면 백엔드가 새로 부여 (issues와 동일한 패턴, 접두사만 mc로 구분)
+        # 접두사가 mc가 아닌 값(예: 모델이 i1을 뱉는 드리프트)도 재부여 — issues id와 섞이면 안 됨
+        mc_id = mc.get("id")
+        if not mc_id or not str(mc_id).startswith("mc") or mc_id in seen_mc_ids:
+            # 앞 항목이 이미 mc1을 쓰고 있을 수 있으므로 비어 있는 번호가 나올 때까지 증가
+            mc_fallback_id_counter += 1
+            while f"mc{mc_fallback_id_counter}" in seen_mc_ids:
+                mc_fallback_id_counter += 1
+            mc_id = f"mc{mc_fallback_id_counter}"
+        seen_mc_ids.add(mc_id)
+        mc["id"] = mc_id
+
+        confidence = mc.get("confidence")
+        if confidence not in ("high", "rec", "low"):
+            confidence = "low"  # 알 수 없는 값이면 가장 보수적으로 취급
+
+        if confidence == "low":
+            # "없는 조건 조작 금지" 원칙 — low인데 값이 와도 백엔드가 강제로 비움
+            mc["suggested_value"] = None
+            mc["suggested_phrase"] = None
+        else:
+            mc.setdefault("options", None)
+
+        mc["confidence"] = confidence
+        missing_constraints.append(mc)
+
+    # Step 8: 긍정 피드백
     feedback = None
     if len(issues_with_guides) == 0 and len(missing_constraints) == 0:
         feedback = "✅ 잘 작성된 프롬프트예요! 개선할 부분이 없습니다."
 
-        # Step 9: 로그인한 유저면 히스토리 자동 저장
-        if authorization and authorization.startswith("Bearer "):
-            try:
-                token = authorization.replace("Bearer ", "")
-                payload = decode_token(token)
-                if payload.get("type") == "access":
-                    user_id = int(payload.get("sub"))
-                    db = SessionLocal()
-                    try:
-                        history = PromptHistory(
-                            user_id=user_id,
-                            original_prompt=prompt,
-                            optimized_prompt=result["optimized"],
-                            original_tokens=original_tokens,
-                            optimized_tokens=optimized_tokens,
-                            saved_tokens=saved_tokens,
-                            saved_percent=saved_percent,
-                            issue_count=len(issues_with_guides),
-                        )
-                        db.add(history)
-                        db.commit()
-                    finally:
-                        db.close()
-            except Exception:
-                pass  # 히스토리 저장 실패해도 optimize 결과는 정상 반환
+    # Step 9: 로그인한 유저면 히스토리 자동 저장
+    if authorization and authorization.startswith("Bearer "):
+        try:
+            token = authorization.replace("Bearer ", "")
+            payload = decode_token(token)
+            if payload.get("type") == "access":
+                user_id = int(payload.get("sub"))
+                db = SessionLocal()
+                try:
+                    history = PromptHistory(
+                        user_id=user_id,
+                        original_prompt=prompt,
+                        optimized_prompt=result["optimized"],
+                        original_tokens=original_tokens,
+                        optimized_tokens=optimized_tokens,
+                        saved_tokens=saved_tokens,
+                        saved_percent=saved_percent,
+                        issue_count=len(issues_with_guides),
+                    )
+                    db.add(history)
+                    db.commit()
+                finally:
+                    db.close()
+        except Exception:
+            pass  # 히스토리 저장 실패해도 optimize 결과는 정상 반환
 
     return {
         "original_tokens": original_tokens,
@@ -381,7 +489,7 @@ async def optimize(
         "saved_percent": saved_percent,
         "optimized_prompt": result["optimized"],
         "issues": issues_with_guides,
-        "missing_constraints": missing_constraints,  
+        "missing_constraints": missing_constraints,
         "feedback": feedback,
         "costs": costs,
     }
