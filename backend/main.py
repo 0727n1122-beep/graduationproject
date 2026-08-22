@@ -223,6 +223,7 @@ async def optimize(
   ],
   "missing_constraints": [
     {{
+      "id": "누락 조건 고유 id. mc1부터 순번 (mc1, mc2, mc3...). issues의 id(i1, i2...)와 접두사가 다르니 섞어 쓰지 말 것",
       "field": "빠진 조건 이름 (예: '출력 언어', '코드 형식')",
       "confidence": "high | rec | low — 4장 기준 준수",
       "suggested_value": "짧은 값 (예: 'Python 3.12'). confidence가 low면 반드시 null",
@@ -242,6 +243,7 @@ MISSING_CONSTRAINT는 issues 배열에 넣지 않는다. missing_constraints 배
 - "입력이 너무 짧거나 무의미함"은 이 단계에서 판단하지 않는다(백엔드 길이 검증이 선행 차단). 따라서 짧다는 이유만으로 issues를 비우지 말 것. 짧은 입력이라도 분석은 정상 수행하고, 문제가 있으면 기록할 것.
 - snippet은 반드시 [원본 프롬프트]에 실제로 등장하는 문자열 그대로 인용할 것. 지어내거나 의역하지 말 것 (원본에 없는 snippet은 백엔드에서 자동 폐기됨).
 - id는 issues 배열 내에서 유일해야 한다 (i1, i2, i3... 중복 금지).
+- missing_constraints의 id도 배열 내에서 유일해야 한다 (mc1, mc2, mc3... 중복 금지). issues의 id와 같은 값을 재사용하지 말 것.
 - missing_constraints의 confidence가 low인데 suggested_value나 suggested_phrase를 채우는 것은 "없는 조건을 확정값처럼 제시"하는 것과 같다 — 절대 금지. low는 반드시 null, options로만 답할 것.
 
 [카테고리 정의 — 우선순위 순]
@@ -384,7 +386,10 @@ MISSING_CONSTRAINT는 issues 배열에 넣지 않는다. missing_constraints 배
         # id: 없거나 중복이면 백엔드가 새로 부여 (배열 인덱스 대신 안정적 참조용)
         issue_id = issue.get("id")
         if not issue_id or issue_id in seen_ids:
+            # 앞 항목이 이미 i1을 쓰고 있을 수 있으므로 비어 있는 번호가 나올 때까지 증가
             fallback_id_counter += 1
+            while f"i{fallback_id_counter}" in seen_ids:
+                fallback_id_counter += 1
             issue_id = f"i{fallback_id_counter}"
         seen_ids.add(issue_id)
         issue["id"] = issue_id
@@ -407,9 +412,24 @@ MISSING_CONSTRAINT는 issues 배열에 넣지 않는다. missing_constraints 배
 
     # Step 7-1: missing_constraints 검증 + 조작 방지 가드
     missing_constraints = []
+    seen_mc_ids = set()
+    mc_fallback_id_counter = 0
+
     for mc in result.get("missing_constraints", []):
         if not mc.get("field"):
             continue  # field 없는 항목은 의미 없음, 드롭
+
+        # id: 없거나 중복이면 백엔드가 새로 부여 (issues와 동일한 패턴, 접두사만 mc로 구분)
+        # 접두사가 mc가 아닌 값(예: 모델이 i1을 뱉는 드리프트)도 재부여 — issues id와 섞이면 안 됨
+        mc_id = mc.get("id")
+        if not mc_id or not str(mc_id).startswith("mc") or mc_id in seen_mc_ids:
+            # 앞 항목이 이미 mc1을 쓰고 있을 수 있으므로 비어 있는 번호가 나올 때까지 증가
+            mc_fallback_id_counter += 1
+            while f"mc{mc_fallback_id_counter}" in seen_mc_ids:
+                mc_fallback_id_counter += 1
+            mc_id = f"mc{mc_fallback_id_counter}"
+        seen_mc_ids.add(mc_id)
+        mc["id"] = mc_id
 
         confidence = mc.get("confidence")
         if confidence not in ("high", "rec", "low"):
