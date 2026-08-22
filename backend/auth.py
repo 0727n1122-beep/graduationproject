@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
+from typing import Optional
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from jose import JWTError, jwt
@@ -166,9 +167,13 @@ def refresh(req: RefreshRequest, db: Session = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserResponse)
-def me(token: str, db: Session = Depends(get_db)):
-    # 실제로는 Authorization 헤더에서 Bearer 토큰 추출해야 함
-    # 지금은 테스트 편의를 위해 쿼리 파라미터로 받음 → 프론트 연결 시 수정 필요
+def me(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail={"error": "로그인이 필요해요.", "code": "UNAUTHORIZED"}
+        )
+    token = authorization.replace("Bearer ", "")
     payload = decode_token(token)
     if payload.get("type") != "access":
         raise HTTPException(
