@@ -379,6 +379,12 @@ MISSING_CONSTRAINT는 issues 배열에 넣지 않는다. missing_constraints 배
             continue
         if not snippet:
             continue  # snippet 자체가 없으면(원래 null이었던 경우 포함) 이 issue는 의미 없음, 드롭
+        # "…"로 잘린 snippet은 verbatim이 아니라 프론트 indexOf가 못 찾음 — 검증 통과한
+        # 실제 매칭 가능한 버전(snippet_clean)으로 교체해서 내려준다. 원본이 그대로
+        # prompt에 있으면 snippet == snippet_clean이라 이 줄은 무해하다.
+        if snippet not in prompt and snippet_clean in prompt:
+            snippet = snippet_clean
+        issue["snippet"] = snippet
 
         category = issue.get("category", "")
         guide = GUIDES.get(category, {})
