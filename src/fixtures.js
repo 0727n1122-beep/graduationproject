@@ -5,70 +5,102 @@
 // test_engine.mjs가 기계적으로 검증한다(육안 확인에 의존하지 않음).
 // ============================================================
 
+// ============================================================
+// CODE_DUMP용 코드 블록 상수 — snippet(원본 그대로)과 replacement(진단문구+코드 보존)
+// 양쪽에서 재사용해서 오탈자로 인한 verbatim 불일치를 원천 차단한다.
+// ============================================================
+const CD01_FUNC = "function checkout(cart) {\n" +
+  "  let total = 0;\n" +
+  "  for (let i = 0; i < cart.length; i++) {\n" +
+  "    total += cart[i].price;\n" +
+  "  }\n" +
+  "  return total.toFixed(2);\n" +
+  "}";
+const CD01_CODE_WITH_ERROR = CD01_FUNC + "\n\ncheckout(null)\n\nTypeError: Cannot read properties of null (reading 'length')";
+
+const CD02_CLASS = "class UserManager:\n" +
+  "    def __init__(self):\n" +
+  "        self.users = []\n" +
+  "    def add_user(self, name, email):\n" +
+  "        self.users.append({\"name\": name, \"email\": email})\n" +
+  "    def find_user(self, email):\n" +
+  "        for u in self.users:\n" +
+  "            if u[\"email\"] == email:\n" +
+  "                return u\n" +
+  "        return None\n" +
+  "    def remove_user(self, email):\n" +
+  "        self.users = [u for u in self.users if u[\"email\"] != email]";
+
+const CD03_COMPONENT = "function SignupForm() {\n" +
+  "  const [email, setEmail] = useState(\"\");\n" +
+  "  const [password, setPassword] = useState(\"\");\n" +
+  "  const [confirm, setConfirm] = useState(\"\");\n" +
+  "  const [error, setError] = useState(\"\");\n\n" +
+  "  function handleSubmit(e) {\n" +
+  "    if (password !== confirm) {\n" +
+  "      setError(\"비밀번호가 일치하지 않습니다.\");\n" +
+  "      return;\n" +
+  "    }\n" +
+  "    fetch(\"/api/signup\", {\n" +
+  "      method: \"POST\",\n" +
+  "      headers: { \"Content-Type\": \"application/json\" },\n" +
+  "      body: JSON.stringify({ email, password }),\n" +
+  "    });\n" +
+  "  }\n\n" +
+  "  return (\n" +
+  "    <form onSubmit={handleSubmit}>\n" +
+  "      <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder=\"이메일\" />\n" +
+  "      <input value={password} onChange={(e) => setPassword(e.target.value)} type=\"password\" placeholder=\"비밀번호\" />\n" +
+  "      <input value={confirm} onChange={(e) => setConfirm(e.target.value)} type=\"password\" placeholder=\"비밀번호 확인\" />\n" +
+  "      {error && <p>{error}</p>}\n" +
+  "      <button type=\"submit\">가입하기</button>\n" +
+  "    </form>\n" +
+  "  );\n" +
+  "}";
+
+const CD04_SCRIPT = "import pandas as pd\n" +
+  "df = pd.read_csv(\"sales.csv\")\n" +
+  "df['date'] = pd.to_datetime(df['date'])\n" +
+  "monthly = df.groupby(df['date'].dt.month)['revenue'].sum()\n" +
+  "print(monthly.plot())";
+const CD04_CODE_WITH_ERROR = CD04_SCRIPT + "\n\nKeyError: 'revenue'";
+
+const CD05_QUERY = "SELECT customer_id, SUM(amount) as total\n" +
+  "FROM orders\n" +
+  "WHERE order_date >= '2026-01-01'\n" +
+  "GROUP BY customer_id\n" +
+  "HAVING total > 100000\n" +
+  "ORDER BY total DESC";
+
 const FIXTURES = [
 
   // ── CODE_DUMP (5) ──────────────────────────────────────────
+  // v5 수정: replacement가 코드를 요약으로 "대체"하지 않는다. 다음 턴에서 실제로 코드를
+  // 고쳐야 하는데 원본이 사라지면 그 수정 자체가 불가능해지기 때문 — 진단 문구를 코드
+  // 위에 붙이고, 코드 본문은 verbatim 그대로 유지한다(minifi_meta_prompt_v5.md 4장 참고).
   {
     id: "CD01", group: "CODE_DUMP", domain: "코딩",
     label: "에러 메시지 있는 코드",
-    prompt: "이 코드에서 자꾸 에러가 나요 고쳐주세요.\n\n" +
-      "function checkout(cart) {\n" +
-      "  let total = 0;\n" +
-      "  for (let i = 0; i < cart.length; i++) {\n" +
-      "    total += cart[i].price;\n" +
-      "  }\n" +
-      "  return total.toFixed(2);\n" +
-      "}\n\n" +
-      "checkout(null)\n\n" +
-      "TypeError: Cannot read properties of null (reading 'length')",
+    prompt: "이 코드에서 자꾸 에러가 나요 고쳐주세요.\n\n" + CD01_CODE_WITH_ERROR,
     issues: [{
       category: "CODE_DUMP", scope: "inline", occurrence: 0,
-      snippet: "function checkout(cart) {\n" +
-        "  let total = 0;\n" +
-        "  for (let i = 0; i < cart.length; i++) {\n" +
-        "    total += cart[i].price;\n" +
-        "  }\n" +
-        "  return total.toFixed(2);\n" +
-        "}\n\n" +
-        "checkout(null)\n\n" +
-        "TypeError: Cannot read properties of null (reading 'length')",
-      explanation: "코드와 에러 메시지를 통째로 보내면 토큰만 늘어요. 에러 원인과 관련 함수를 요약해서 넣어드릴게요.",
-      replacement: "[코드 요약] cart의 length에 접근하기 전 null 체크가 없어 checkout(null) 호출 시 TypeError가 발생하는 checkout(cart) 합계 계산 함수",
+      snippet: CD01_CODE_WITH_ERROR,
+      explanation: "코드와 에러 메시지를 통째로 보내면 토큰만 늘어요. 원인만 진단해서 코드 위에 붙이고, 코드는 그대로 남겨드릴게요.",
+      replacement: "[진단] cart의 length에 접근하기 전 null 체크가 없어 checkout(null) 호출 시 TypeError가 발생함\n\n" + CD01_FUNC,
+      _testExpectCodeFragment: CD01_FUNC,
     }],
     missing_constraints: [],
   },
   {
     id: "CD02", group: "CODE_DUMP", domain: "코딩",
     label: "에러 메시지 없는 코드 리뷰 요청",
-    prompt: "이 코드 리뷰 좀 해주세요.\n\n" +
-      "class UserManager:\n" +
-      "    def __init__(self):\n" +
-      "        self.users = []\n" +
-      "    def add_user(self, name, email):\n" +
-      "        self.users.append({\"name\": name, \"email\": email})\n" +
-      "    def find_user(self, email):\n" +
-      "        for u in self.users:\n" +
-      "            if u[\"email\"] == email:\n" +
-      "                return u\n" +
-      "        return None\n" +
-      "    def remove_user(self, email):\n" +
-      "        self.users = [u for u in self.users if u[\"email\"] != email]",
+    prompt: "이 코드 리뷰 좀 해주세요.\n\n" + CD02_CLASS,
     issues: [{
       category: "CODE_DUMP", scope: "inline", occurrence: 0,
-      snippet: "class UserManager:\n" +
-        "    def __init__(self):\n" +
-        "        self.users = []\n" +
-        "    def add_user(self, name, email):\n" +
-        "        self.users.append({\"name\": name, \"email\": email})\n" +
-        "    def find_user(self, email):\n" +
-        "        for u in self.users:\n" +
-        "            if u[\"email\"] == email:\n" +
-        "                return u\n" +
-        "        return None\n" +
-        "    def remove_user(self, email):\n" +
-        "        self.users = [u for u in self.users if u[\"email\"] != email]",
-      explanation: "에러 없이 코드만 붙여넣으면, 무엇을 하는 코드인지 한 문장으로 요약해서 넣어드릴게요.",
-      replacement: "[코드 요약] 사용자를 목록에 추가·이메일로 검색·삭제하는 UserManager 클래스(add_user/find_user/remove_user)",
+      snippet: CD02_CLASS,
+      explanation: "에러 없이 코드만 붙여넣으면, 무엇을 하는 코드인지 한 줄로 설명해서 코드 위에 붙여드려요. 코드는 그대로 유지돼요.",
+      replacement: "[코드 설명] 사용자를 목록에 추가·이메일로 검색·삭제하는 UserManager 클래스(add_user/find_user/remove_user)\n\n" + CD02_CLASS,
+      _testExpectCodeFragment: CD02_CLASS,
     }],
     missing_constraints: [],
   },
@@ -77,109 +109,39 @@ const FIXTURES = [
     label: "대량 코드 + 특정 부분만 문제 (snippet 길이제한 예외 확인)",
     // 원문 QA 리스트엔 "90줄 컴포넌트 코드 전체 첨부"로만 서술돼 있어, 동일 취지의
     // 축약 버전(핵심 버그 재현 가능한 최소 코드)으로 구성함.
-    prompt: "회원가입 폼 컴포넌트인데 제출이 안 돼요.\n\n" +
-      "function SignupForm() {\n" +
-      "  const [email, setEmail] = useState(\"\");\n" +
-      "  const [password, setPassword] = useState(\"\");\n" +
-      "  const [confirm, setConfirm] = useState(\"\");\n" +
-      "  const [error, setError] = useState(\"\");\n\n" +
-      "  function handleSubmit(e) {\n" +
-      "    if (password !== confirm) {\n" +
-      "      setError(\"비밀번호가 일치하지 않습니다.\");\n" +
-      "      return;\n" +
-      "    }\n" +
-      "    fetch(\"/api/signup\", {\n" +
-      "      method: \"POST\",\n" +
-      "      headers: { \"Content-Type\": \"application/json\" },\n" +
-      "      body: JSON.stringify({ email, password }),\n" +
-      "    });\n" +
-      "  }\n\n" +
-      "  return (\n" +
-      "    <form onSubmit={handleSubmit}>\n" +
-      "      <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder=\"이메일\" />\n" +
-      "      <input value={password} onChange={(e) => setPassword(e.target.value)} type=\"password\" placeholder=\"비밀번호\" />\n" +
-      "      <input value={confirm} onChange={(e) => setConfirm(e.target.value)} type=\"password\" placeholder=\"비밀번호 확인\" />\n" +
-      "      {error && <p>{error}</p>}\n" +
-      "      <button type=\"submit\">가입하기</button>\n" +
-      "    </form>\n" +
-      "  );\n" +
-      "}",
+    prompt: "회원가입 폼 컴포넌트인데 제출이 안 돼요.\n\n" + CD03_COMPONENT,
     issues: [{
       category: "CODE_DUMP", scope: "inline", occurrence: 0,
-      snippet: "function SignupForm() {\n" +
-        "  const [email, setEmail] = useState(\"\");\n" +
-        "  const [password, setPassword] = useState(\"\");\n" +
-        "  const [confirm, setConfirm] = useState(\"\");\n" +
-        "  const [error, setError] = useState(\"\");\n\n" +
-        "  function handleSubmit(e) {\n" +
-        "    if (password !== confirm) {\n" +
-        "      setError(\"비밀번호가 일치하지 않습니다.\");\n" +
-        "      return;\n" +
-        "    }\n" +
-        "    fetch(\"/api/signup\", {\n" +
-        "      method: \"POST\",\n" +
-        "      headers: { \"Content-Type\": \"application/json\" },\n" +
-        "      body: JSON.stringify({ email, password }),\n" +
-        "    });\n" +
-        "  }\n\n" +
-        "  return (\n" +
-        "    <form onSubmit={handleSubmit}>\n" +
-        "      <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder=\"이메일\" />\n" +
-        "      <input value={password} onChange={(e) => setPassword(e.target.value)} type=\"password\" placeholder=\"비밀번호\" />\n" +
-        "      <input value={confirm} onChange={(e) => setConfirm(e.target.value)} type=\"password\" placeholder=\"비밀번호 확인\" />\n" +
-        "      {error && <p>{error}</p>}\n" +
-        "      <button type=\"submit\">가입하기</button>\n" +
-        "    </form>\n" +
-        "  );\n" +
-        "}",
-      explanation: "코드 전체를 그대로 보내면 토큰만 늘어요. 90줄이 넘어가도 snippet 길이 제한 없이 전체를 요약해드려요.",
-      replacement: "[코드 요약] 이메일·비밀번호·비밀번호 확인을 입력받아 /api/signup에 회원가입 요청을 보내는 폼 컴포넌트",
+      snippet: CD03_COMPONENT,
+      explanation: "코드 전체를 그대로 보내면 토큰만 늘어요. 90줄이 넘어가도 snippet 길이 제한 없이 코드는 전부 보존하고, 진단 한 줄만 앞에 붙여드려요.",
+      replacement: "[코드 설명] handleSubmit에 e.preventDefault()가 없어 제출 시 페이지가 새로고침되는 것으로 보이는 회원가입 폼 컴포넌트\n\n" + CD03_COMPONENT,
+      _testExpectCodeFragment: CD03_COMPONENT,
     }],
     missing_constraints: [],
   },
   {
     id: "CD04", group: "CODE_DUMP", domain: "데이터분석",
     label: "pandas 전처리 코드 + 에러",
-    prompt: "이 전처리 코드 실행하면 에러나요.\n\n" +
-      "import pandas as pd\n" +
-      "df = pd.read_csv(\"sales.csv\")\n" +
-      "df['date'] = pd.to_datetime(df['date'])\n" +
-      "monthly = df.groupby(df['date'].dt.month)['revenue'].sum()\n" +
-      "print(monthly.plot())\n\n" +
-      "KeyError: 'revenue'",
+    prompt: "이 전처리 코드 실행하면 에러나요.\n\n" + CD04_CODE_WITH_ERROR,
     issues: [{
       category: "CODE_DUMP", scope: "inline", occurrence: 0,
-      snippet: "import pandas as pd\n" +
-        "df = pd.read_csv(\"sales.csv\")\n" +
-        "df['date'] = pd.to_datetime(df['date'])\n" +
-        "monthly = df.groupby(df['date'].dt.month)['revenue'].sum()\n" +
-        "print(monthly.plot())\n\n" +
-        "KeyError: 'revenue'",
-      explanation: "코드와 에러를 통째로 보내는 대신, 컬럼명 문제가 원인이라는 걸 요약해서 넣어드려요.",
-      replacement: "[코드 요약] date 컬럼 기준으로 월별 revenue를 합산하려 했으나 CSV에 revenue 컬럼이 없어 KeyError가 발생하는 매출 집계 코드",
+      snippet: CD04_CODE_WITH_ERROR,
+      explanation: "코드와 에러를 통째로 보내는 대신, 컬럼명 문제가 원인이라는 걸 진단해서 코드 위에 붙이고 코드는 그대로 남겨드려요.",
+      replacement: "[진단] date 컬럼 기준으로 월별 revenue를 합산하려 했으나 CSV에 revenue 컬럼이 없어 KeyError가 발생함\n\n" + CD04_SCRIPT,
+      _testExpectCodeFragment: CD04_SCRIPT,
     }],
     missing_constraints: [],
   },
   {
     id: "CD05", group: "CODE_DUMP", domain: "데이터분석",
     label: "SQL 쿼리 전체, 에러 없음",
-    prompt: "이 쿼리 결과가 이상하게 나와요. 확인해주세요.\n\n" +
-      "SELECT customer_id, SUM(amount) as total\n" +
-      "FROM orders\n" +
-      "WHERE order_date >= '2026-01-01'\n" +
-      "GROUP BY customer_id\n" +
-      "HAVING total > 100000\n" +
-      "ORDER BY total DESC",
+    prompt: "이 쿼리 결과가 이상하게 나와요. 확인해주세요.\n\n" + CD05_QUERY,
     issues: [{
       category: "CODE_DUMP", scope: "inline", occurrence: 0,
-      snippet: "SELECT customer_id, SUM(amount) as total\n" +
-        "FROM orders\n" +
-        "WHERE order_date >= '2026-01-01'\n" +
-        "GROUP BY customer_id\n" +
-        "HAVING total > 100000\n" +
-        "ORDER BY total DESC",
-      explanation: "에러 메시지가 없으니, 쿼리가 무엇을 하는지 요약해서 넣어드려요.",
-      replacement: "[코드 요약] 2026년 이후 주문 중 고객별 합계 금액이 10만 원을 초과하는 고객을 합계 내림차순으로 조회하는 쿼리",
+      snippet: CD05_QUERY,
+      explanation: "에러 메시지가 없으니, 쿼리가 무엇을 하는지 한 줄로 설명해서 위에 붙이고 쿼리 본문은 그대로 유지해요.",
+      replacement: "[코드 설명] 2026년 이후 주문 중 고객별 합계 금액이 10만 원을 초과하는 고객을 합계 내림차순으로 조회하는 쿼리\n\n" + CD05_QUERY,
+      _testExpectCodeFragment: CD05_QUERY,
     }],
     missing_constraints: [],
   },
@@ -564,6 +526,183 @@ const FIXTURES = [
     missing_constraints: [],
   },
 ];
+
+// ── MIXED (혼합 카테고리, 5개) ────────────────────────────────
+// domain_qa_list_v5.md의 30개는 "분류 정확도" 확인용이라 케이스당 카테고리가 1개뿐이었다.
+// 그런데 실제 사용자 입력은 여러 이슈가 한 프롬프트 안에 섞여 나온다 — 처음 전달받은
+// minifi-diagnosis-mockup.html의 포트폴리오/캘린더/챗봇 3개 데모가 정확히 그런 예시였으므로,
+// 그 3개를 v5 스키마로 옮기고, CODE_DUMP·UNSTRUCTURED가 섞인 케이스를 추가로 만들었다.
+let MX01, MX02, MX03, MX04, MX05;
+(function () {
+    const P1 = "음 저기 혹시 가능하면 ";
+    const P2 = "제 포트폴리오 사이트에 ";
+    const P3 = "이력서 페이지랑 프로젝트 갤러리랑 연락처 폼이랑 다크모드까지 한번에 만들어주시면 좋겠고";
+    const P4 = ", ";
+    const P5 = "버그 나면 버그 수정도 해주고 에러도 꼭 잡아주세요";
+    const P6 = ". ";
+    const P7 = "이 부분";
+    const P8 = " 좀 더 ";
+    const P9 = "괜찮게";
+    const P10 = " 해주세요. ";
+    const P11 = "아 그리고 그냥 대충 아무렇게나 부탁드려요.";
+    MX01 = {
+      id: "MX01", group: "MIXED", domain: "코딩",
+      label: "포트폴리오 사이트 (필러·구조형·중복·모호함 혼합, 원본 목업 시나리오)",
+      prompt: P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10 + P11,
+      issues: [
+        { category: "FILLER", scope: "inline", occurrence: 0, snippet: P1,
+          explanation: "망설임·완곡 표현은 의미를 바꾸지 않으면서 토큰만 써요.", replacement: "" },
+        { category: "MONOLITHIC_REQUEST", scope: "structural", occurrence: 0, snippet: P3,
+          explanation: "독립적으로 검증 가능한 기능이 4개예요. 아래에서 순서대로 나눌 수 있어요.", replacement: null,
+          steps: [
+            { title: "이력서 페이지", desc: "경력·기술 스택을 보여주는 정적 페이지" },
+            { title: "프로젝트 갤러리", desc: "카드형 목록, 클릭 시 상세 모달" },
+            { title: "연락처 폼", desc: "이름·이메일·메시지, 제출 시 이메일 전송" },
+            { title: "다크모드 통합", desc: "위 3개 완성 후 토글 추가" },
+          ] },
+        { category: "REDUNDANT", scope: "inline", occurrence: 0, snippet: P5,
+          explanation: "'버그 수정'과 '에러를 잡는다'는 같은 요구예요. 한 번만 쓰면 충분해요.", replacement: "에러가 발생하면 수정해주세요" },
+        { category: "AMBIGUOUS", scope: "inline", occurrence: 0, snippet: P7,
+          explanation: "무엇을 가리키는지 알 수 없어 LLM이 엉뚱한 곳을 고칠 수 있어요.", replacement: "연락처 폼 제출 버튼" },
+        { category: "AMBIGUOUS", scope: "inline", occurrence: 0, snippet: P9,
+          explanation: "'괜찮게'는 기준이 없어 결과가 매번 달라질 수 있어요.", replacement: "모바일에서도 잘 보이게(반응형으로)" },
+        { category: "FILLER", scope: "inline", occurrence: 0, snippet: P11,
+          explanation: "가리키는 대상이 없는 마무리 표현이라 LLM이 해석할 정보가 없어요.", replacement: "" },
+      ],
+      missing_constraints: [
+        { field: "프론트엔드 프레임워크", confidence: "high", suggested_value: "React 18 + Vite", suggested_phrase: "React 18 + Vite 기준으로 작성해주세요." },
+        { field: "색상 톤", confidence: "rec", suggested_value: "네이비·베이지 톤 유지", suggested_phrase: "네이비·베이지 톤으로 작성해주세요." },
+        { field: "반응형 기준", confidence: "low", options: [
+          { label: "768px 이하 1열", phrase: "768px 이하에서는 1열로 배치해주세요." },
+          { label: "1024px 이하 2열", phrase: "1024px 이하에서는 2열로 배치해주세요." },
+          { label: "제한 없음", phrase: null },
+        ] },
+      ],
+    };
+  })();
+
+  (function () {
+    const P1 = "일정 관리 앱에 캘린더 기능을 추가해주고 싶은데, ";
+    const P2 = "음 만약 가능하다면 ";
+    const P3 = "월간뷰랑 주간뷰랑 알림 설정까지 한번에 넣어주시고";
+    const P4 = ", ";
+    const P5 = "일정 겹치면 겹치는 것도 처리해주고 충돌 나는 것도 알아서 잘 처리해주세요";
+    const P6 = ". 그리고 저기 그 ";
+    const P7 = "색깔도 예쁘게";
+    const P8 = " 해주세요.";
+    MX02 = {
+      id: "MX02", group: "MIXED", domain: "코딩",
+      label: "일정관리 앱 캘린더 (필러·구조형·중복·모호함 혼합, 원본 목업 시나리오)",
+      prompt: P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8,
+      issues: [
+        { category: "FILLER", scope: "inline", occurrence: 0, snippet: P2,
+          explanation: "망설임 표현이라 그대로 둬도 의미는 바뀌지 않아요.", replacement: "" },
+        { category: "MONOLITHIC_REQUEST", scope: "structural", occurrence: 0, snippet: P3,
+          explanation: "독립적으로 검증 가능한 기능이 3개예요. 아래에서 순서대로 나눌 수 있어요.", replacement: null,
+          steps: [
+            { title: "월간뷰", desc: "달력 그리드에 일정 표시" },
+            { title: "주간뷰", desc: "시간대별 상세 일정 표시" },
+            { title: "알림 설정", desc: "일정 시작 전 푸시/이메일 알림" },
+          ] },
+        { category: "REDUNDANT", scope: "inline", occurrence: 0, snippet: P5,
+          explanation: "같은 요구를 두 번 반복해서 말하고 있어요.", replacement: "일정이 겹치면 충돌을 자동으로 처리해주세요" },
+        { category: "AMBIGUOUS", scope: "inline", occurrence: 0, snippet: P7,
+          explanation: "기준 없는 표현이라 결과가 매번 달라질 수 있어요.", replacement: "기본 테마 색상(파란 계열)으로" },
+      ],
+      missing_constraints: [
+        { field: "반복 일정", confidence: "high", suggested_value: "매주 반복 지원", suggested_phrase: "매주 반복되는 일정도 지원해주세요." },
+        { field: "알림 방식", confidence: "low", options: [
+          { label: "푸시+이메일", phrase: "푸시 알림과 이메일 알림 모두 지원해주세요." },
+          { label: "푸시만", phrase: "푸시 알림만 지원해주세요." },
+          { label: "이메일만", phrase: "이메일 알림만 지원해주세요." },
+        ] },
+      ],
+    };
+  })();
+
+  (function () {
+    const P1 = "우리 고객센터 챗봇이 배송 문의에 답할 때 ";
+    const P2 = "친절하고 친근하게, 다정하게";
+    const P3 = " 답변하도록 프롬프트를 만들어줘. ";
+    const P4 = "배송 조회, 반품 문의, 교환 문의 세 가지 케이스를 각각 다른 버튼으로 처리해주고";
+    const P5 = ", ";
+    const P6 = "애매한 질문이 오면 그냥 알아서 잘 판단해서 답변해줘";
+    const P7 = ".";
+    MX03 = {
+      id: "MX03", group: "MIXED", domain: "코딩",
+      label: "고객센터 챗봇 (중복·구조형·모호함 혼합, 원본 목업 시나리오)",
+      prompt: P1 + P2 + P3 + P4 + P5 + P6 + P7,
+      issues: [
+        { category: "REDUNDANT", scope: "inline", occurrence: 0, snippet: P2,
+          explanation: "비슷한 의미의 표현을 세 번 나열하고 있어요.", replacement: "친절한 톤으로" },
+        { category: "MONOLITHIC_REQUEST", scope: "structural", occurrence: 0, snippet: P4,
+          explanation: "버튼별 케이스가 3개예요. 각각 따로 정의하면 검증이 쉬워져요.", replacement: null,
+          steps: [
+            { title: "배송 조회", desc: "주문번호로 배송 상태 안내" },
+            { title: "반품 문의", desc: "반품 사유·절차 안내" },
+            { title: "교환 문의", desc: "교환 가능 조건·절차 안내" },
+          ] },
+        { category: "AMBIGUOUS", scope: "inline", occurrence: 0, snippet: P6,
+          explanation: "판단 기준이 없어 응답이 매번 달라질 수 있어요.", replacement: "미리 정의된 FAQ에 없는 질문이면 상담사 연결을 안내해줘" },
+      ],
+      missing_constraints: [
+        { field: "응답 언어", confidence: "high", suggested_value: "한국어", suggested_phrase: "기본 응답 언어는 한국어로 해주세요." },
+      ],
+    };
+  })();
+
+  (function () {
+    const P1 = "음 죄송한데 이 코드가 자꾸 에러가 나서요.\n\n";
+    const CODE = "def divide(a, b):\n    return a / b\n\ndivide(10, 0)\n\nZeroDivisionError: division by zero";
+    const CODE_ONLY = "def divide(a, b):\n    return a / b";
+    const P2 = "\n\n고쳐주실 수 있나요?";
+    MX04 = {
+      id: "MX04", group: "MIXED", domain: "코딩",
+      label: "필러 + CODE_DUMP + MISSING_CONSTRAINT 혼합 (코드 보존 확인용)",
+      prompt: P1 + CODE + P2,
+      issues: [
+        { category: "FILLER", scope: "inline", occurrence: 0, snippet: "음 죄송한데 ",
+          explanation: "사과·완곡 표현은 의미를 바꾸지 않으면서 토큰만 써요.", replacement: "" },
+        { category: "CODE_DUMP", scope: "inline", occurrence: 0, snippet: CODE,
+          explanation: "코드와 에러 트레이스를 통째로 보내는 대신, 원인만 진단해서 코드 위에 붙이고 코드는 그대로 남겨드려요.",
+          replacement: "[진단] b가 0일 때 ZeroDivisionError가 발생하는 나눗셈 함수\n\n" + CODE_ONLY,
+          _testExpectCodeFragment: CODE_ONLY },
+      ],
+      missing_constraints: [
+        { field: "0으로 나눌 때 처리 방식", confidence: "low", options: [
+          { label: "예외 그대로 발생시키기", phrase: "0으로 나누는 경우 ZeroDivisionError를 그대로 발생시켜주세요." },
+          { label: "None 반환", phrase: "0으로 나누는 경우 None을 반환하도록 처리해주세요." },
+          { label: "0 반환", phrase: "0으로 나누는 경우 0을 반환하도록 처리해주세요." },
+        ] },
+      ],
+    };
+  })();
+
+  (function () {
+    const P1 = "음 혹시 가능하면 ";
+    const P2 = "검색 기능 좀 만들어주세요. 키워드로 찾아지고, 최신순 정렬도 되고, 카테고리 필터도 있었으면 좋겠어요.";
+    const P3 = " 백엔드는 편하신 걸로 해주세요.";
+    MX05 = {
+      id: "MX05", group: "MIXED", domain: "코딩",
+      label: "필러 + UNSTRUCTURED + MISSING_CONSTRAINT 혼합",
+      prompt: P1 + P2 + P3,
+      issues: [
+        { category: "FILLER", scope: "inline", occurrence: 0, snippet: P1,
+          explanation: "완곡 표현이라 그대로 둬도 의미는 바뀌지 않아요.", replacement: "" },
+        { category: "UNSTRUCTURED", scope: "inline", occurrence: 0, snippet: P2,
+          explanation: "하나의 기능에 대한 요구사항이 흩어져 있어요. 번호 리스트로 정리해드려요.",
+          replacement: "검색 기능을 다음 조건으로 만들어주세요 — 1) 키워드 검색 2) 최신순 정렬 3) 카테고리 필터" },
+      ],
+      missing_constraints: [
+        { field: "백엔드 언어/프레임워크", confidence: "low", options: [
+          { label: "Node.js + Express", phrase: "Node.js + Express로 만들어주세요." },
+          { label: "Python + FastAPI", phrase: "Python + FastAPI로 만들어주세요." },
+          { label: "제한 없음", phrase: null },
+        ] },
+      ],
+    };
+  })();
+FIXTURES.push(MX01, MX02, MX03, MX04, MX05);
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { FIXTURES };
