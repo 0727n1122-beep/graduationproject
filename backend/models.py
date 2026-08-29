@@ -8,7 +8,8 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
-    password_hash = Column(String(255), nullable=False)
+    password_hash = Column(String(255), nullable=True)  # 구글 등 소셜 로그인 유저는 비밀번호 없음
+    google_id = Column(String(255), unique=True, nullable=True, index=True)  # 구글 OAuth sub 클레임
     nickname = Column(String(50), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     is_active = Column(Boolean, default=True)

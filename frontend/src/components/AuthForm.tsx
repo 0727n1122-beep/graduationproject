@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 
 // ============================================================
 // AuthForm — 로그인/회원가입 탭 전환 폼
@@ -65,9 +67,37 @@ export default function AuthForm() {
     );
   }
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const router = useRouter();
+  const hiddenGoogleBtnRef = useRef<HTMLDivElement>(null);
+
   function handleGoogle() {
-    // TODO: 구글 OAuth 연동 (아직 연동 전)
-    alert("구글 연동 예정입니다.");
+    // 실제 인증은 숨겨진 공식 구글 버튼(GoogleLogin)에 위임 — 기존 커스텀 버튼 디자인 유지
+    const officialBtn = hiddenGoogleBtnRef.current?.querySelector(
+      'div[role="button"]',
+    ) as HTMLElement | null;
+    officialBtn?.click();
+  }
+
+  async function handleGoogleSuccess(credentialResponse: CredentialResponse) {
+    if (!credentialResponse.credential) {
+      alert("구글 로그인에 실패했어요. 다시 시도해주세요.");
+      return;
+    }
+    try {
+      const res = await fetch(`${API_URL}/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential: credentialResponse.credential }),
+      });
+      if (!res.ok) throw new Error("google login failed");
+      const data = await res.json();
+      localStorage.setItem("access_token", data.access_token);
+      localStorage.setItem("refresh_token", data.refresh_token);
+      router.push("/");
+    } catch {
+      alert("구글 로그인에 실패했어요. 다시 시도해주세요.");
+    }
   }
 
   const inputBase =
@@ -270,7 +300,16 @@ export default function AuthForm() {
           또는
         </div>
 
-        {/* 구글 연동 (아직 연동 전) */}
+        {/* 구글 로그인 — 실제 인증은 숨겨진 공식 버튼(GoogleLogin)에 위임, 화면엔 커스텀 버튼만 보임 */}
+        <div
+          ref={hiddenGoogleBtnRef}
+          style={{ position: "absolute", top: -9999, left: -9999, opacity: 0, pointerEvents: "none" }}
+        >
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => alert("구글 로그인에 실패했어요. 다시 시도해주세요.")}
+          />
+        </div>
         <button
           type="button"
           onClick={handleGoogle}

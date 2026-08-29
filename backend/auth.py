@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 from database import get_db
 from models import User
 import os
+from google.oauth2 import id_token as google_id_token
+from google.auth.transport import requests as google_auth_requests
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -16,6 +18,7 @@ SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -28,6 +31,9 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+
+class GoogleLoginRequest(BaseModel):
+    credential: str  # 프론트에서 받은 구글 ID 토큰(JWT)
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -131,6 +137,66 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
             status_code=403,
             detail={"error": "비활성화된 계정이에요.", "code": "ACCOUNT_DISABLED"}
         )
+    return TokenResponse(
+        access_token=create_access_token(user.id),
+        refresh_token=create_refresh_token(user.id),
+    )
+
+
+@router.post("/google", response_model=TokenResponse)
+def google_login(req: GoogleLoginRequest, db: Session = Depends(get_db)):
+    if not GOOGLE_CLIENT_ID:
+        raise HTTPException(
+            status_code=500,
+            detail={"error": "구글 로그인이 서버에 설정되어 있지 않아요.", "code": "GOOGLE_NOT_CONFIGURED"}
+        )
+    try:
+        idinfo = google_id_token.verify_oauth2_token(
+            req.credential, google_auth_requests.Request(), GOOGLE_CLIENT_ID
+        )
+    except ValueError:
+        raise HTTPException(
+            status_code=401,
+            detail={"error": "구글 인증에 실패했어요.", "code": "INVALID_GOOGLE_TOKEN"}
+        )
+
+    google_sub = idinfo["sub"]
+    email = idinfo.get("email")
+    email_verified = idinfo.get("email_verified", False)
+    name = idinfo.get("name") or (email.split("@")[0] if email else "사용자")
+
+    if not email or not email_verified:
+        raise HTTPException(
+            status_code=401,
+            detail={"error": "이메일이 확인되지 않은 구글 계정이에요.", "code": "EMAIL_NOT_VERIFIED"}
+        )
+
+    # 1) google_id로 기존 유저 조회
+    user = db.query(User).filter(User.google_id == google_sub).first()
+
+    if not user:
+        # 2) 이메일로 가입된 기존 계정이 있으면 구글 계정 연결
+        user = db.query(User).filter(User.email == email).first()
+        if user:
+            user.google_id = google_sub
+        else:
+            # 3) 완전 신규 유저 생성 (비밀번호 없음)
+            user = User(
+                email=email,
+                password_hash=None,
+                google_id=google_sub,
+                nickname=name[:50],
+            )
+            db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=403,
+            detail={"error": "비활성화된 계정이에요.", "code": "ACCOUNT_DISABLED"}
+        )
+
     return TokenResponse(
         access_token=create_access_token(user.id),
         refresh_token=create_refresh_token(user.id),
