@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 
@@ -70,19 +70,19 @@ export default function AuthForm() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
   const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
   const router = useRouter();
-  const hiddenGoogleBtnRef = useRef<HTMLDivElement>(null);
+  const googleBtnWrapRef = useRef<HTMLDivElement>(null);
+  const [googleBtnWidth, setGoogleBtnWidth] = useState(320);
 
-  function handleGoogle() {
-    if (!GOOGLE_CLIENT_ID) {
-      alert("구글 로그인이 아직 설정되지 않았어요.");
-      return;
+  useEffect(() => {
+    function updateWidth() {
+      if (googleBtnWrapRef.current) {
+        setGoogleBtnWidth(googleBtnWrapRef.current.offsetWidth);
+      }
     }
-    // 실제 인증은 숨겨진 공식 구글 버튼(GoogleLogin)에 위임 — 기존 커스텀 버튼 디자인 유지
-    const officialBtn = hiddenGoogleBtnRef.current?.querySelector(
-      'div[role="button"]',
-    ) as HTMLElement | null;
-    officialBtn?.click();
-  }
+    updateWidth();
+    window.addEventListener("resize", updateWidth);
+    return () => window.removeEventListener("resize", updateWidth);
+  }, []);
 
   async function handleGoogleSuccess(credentialResponse: CredentialResponse) {
     if (!credentialResponse.credential) {
@@ -305,29 +305,41 @@ export default function AuthForm() {
           또는
         </div>
 
-        {/* 구글 로그인 — 실제 인증은 숨겨진 공식 버튼(GoogleLogin)에 위임, 화면엔 커스텀 버튼만 보임.
+        {/* 구글 로그인 — 실제 구글 버튼(iframe)을 커스텀 버튼 자리 위에 투명하게 겹쳐서
+            진짜 클릭이 iframe에 직접 전달되게 함. iframe 내부는 크로스오리진이라 JS로
+            클릭을 강제 전달(officialBtn.click())할 수 없어서 기존 방식은 항상 아무 반응이
+            없었음(콘솔 에러도 없이 조용히 실패).
             GoogleLogin은 GoogleOAuthProvider 안에서만 렌더링 가능해서, 클라이언트 ID가 없을 때(=
             GoogleAuthProvider가 provider를 안 씌운 상태) 렌더링하면 그대로 크래시한다 — 특히 이
             페이지가 정적으로 prerender될 때 빌드 자체가 죽는다. 클라이언트 ID가 있을 때만 마운트. */}
-        {GOOGLE_CLIENT_ID && (
-          <div
-            ref={hiddenGoogleBtnRef}
-            style={{ position: "absolute", top: -9999, left: -9999, opacity: 0, pointerEvents: "none" }}
+        <div ref={googleBtnWrapRef} className="relative w-full">
+          {GOOGLE_CLIENT_ID && (
+            <div className="absolute inset-0 z-10 overflow-hidden opacity-0">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => alert("구글 로그인에 실패했어요. 다시 시도해주세요.")}
+                width={googleBtnWidth}
+              />
+            </div>
+          )}
+          <button
+            type="button"
+            tabIndex={GOOGLE_CLIENT_ID ? -1 : 0}
+            aria-hidden={!!GOOGLE_CLIENT_ID}
+            onClick={
+              GOOGLE_CLIENT_ID
+                ? undefined
+                : () => alert("구글 로그인이 아직 설정되지 않았어요.")
+            }
+            className={
+              "flex w-full items-center justify-center gap-2 rounded-[10px] border border-[#E4E8EE] bg-white py-[11px] text-[13.5px] font-bold text-[#182430] transition-colors hover:bg-[#F5F7F9] " +
+              (GOOGLE_CLIENT_ID ? "pointer-events-none" : "")
+            }
           >
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => alert("구글 로그인에 실패했어요. 다시 시도해주세요.")}
-            />
-          </div>
-        )}
-        <button
-          type="button"
-          onClick={handleGoogle}
-          className="flex w-full items-center justify-center gap-2 rounded-[10px] border border-[#E4E8EE] bg-white py-[11px] text-[13.5px] font-bold text-[#182430] transition-colors hover:bg-[#F5F7F9]"
-        >
-          <GoogleIcon />
-          Google로 계속하기
-        </button>
+            <GoogleIcon />
+            Google로 계속하기
+          </button>
+        </div>
 
         {/* 하단 전환 링크 */}
         <p className="mt-5 text-center text-[12px] font-semibold text-[#9AA4B0]">

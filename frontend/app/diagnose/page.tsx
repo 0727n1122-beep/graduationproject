@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import DiagnosisCards from "@/src/components/DiagnosisCards";
 import DiagnosisSidebar from "@/src/components/DiagnosisSidebar";
 import PromptEntry from "@/src/components/PromptEntry";
@@ -10,6 +11,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const REPLAY_KEY = "minifi_replay_prompt";
 
 export default function DiagnosePage() {
+  const router = useRouter();
   const [prompt, setPrompt] = useState("");
   const [submittedPrompt, setSubmittedPrompt] = useState("");
   const [result, setResult] = useState<OptimizeResponse | null>(null);
@@ -59,6 +61,7 @@ export default function DiagnosePage() {
         active="diagnosis"
         onNavigate={(view) => {
           if (view === "diagnosis") setResult(null); // 첨삭 아이콘 다시 클릭 → 새 프롬프트 입력으로
+          if (view === "mypage") router.push("/mypage");
         }}
       />
       <main className="flex-1 p-9">
