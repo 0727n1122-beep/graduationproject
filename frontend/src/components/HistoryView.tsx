@@ -23,7 +23,7 @@ import type { HistoryItem } from "@/types/history";
 import { CATEGORY_NAME, type IssueCategory } from "@/types/diagnosis";
 import { truncateForDisplay } from "@/src/lib/diagnosisEngine";
 
-const REPLAY_KEY = "minifi_replay_prompt";
+const VIEW_KEY = "minifi_history_view";
 const RECENT_LIMIT = 10;
 
 function categoryLabel(cat: string): string {
@@ -66,9 +66,24 @@ export default function HistoryView({ items }: { items: HistoryItem[] }) {
   const topCategory = categoryEntries[0];
   const maxCategoryCount = Math.max(1, ...categoryEntries.map(([, n]) => n));
 
-  function replay(item: HistoryItem) {
-    sessionStorage.setItem(REPLAY_KEY, item.original_prompt);
-    router.push("/diagnose");
+  function viewRecord(item: HistoryItem) {
+    if (!item.diagnosis_detail) return;
+    const payload = {
+      prompt: item.original_prompt,
+      result: {
+        original_tokens: item.original_tokens,
+        optimized_tokens: item.optimized_tokens,
+        saved_tokens: item.saved_tokens,
+        saved_percent: item.saved_percent,
+        optimized_prompt: item.optimized_prompt,
+        issues: item.diagnosis_detail.issues,
+        missing_constraints: item.diagnosis_detail.missing_constraints,
+        feedback: item.diagnosis_detail.feedback,
+        costs: {},
+      },
+    };
+    sessionStorage.setItem(VIEW_KEY, JSON.stringify(payload));
+    router.push("/history/view");
   }
 
   return (
@@ -79,7 +94,7 @@ export default function HistoryView({ items }: { items: HistoryItem[] }) {
         </div>
         <h1 className="text-[26px] font-extrabold tracking-tight text-[#182430]">첨삭 히스토리</h1>
         <div className="mt-1 text-[12.5px] font-semibold text-[#9AA4B0]">
-          최근 진단한 프롬프트를 다시 열어 처음부터 첨삭할 수 있어요
+          그때 반영했던 첨삭 기록을 다시 볼 수 있어요
         </div>
       </div>
 
@@ -161,10 +176,12 @@ export default function HistoryView({ items }: { items: HistoryItem[] }) {
                     </span>
                   </div>
                   <button
-                    onClick={() => replay(item)}
-                    className="h-8 flex-none rounded-lg border border-[#00C9C8] px-3.5 text-[12px] font-bold text-[#0891B2] transition-colors hover:bg-[#E0F7F7]"
+                    onClick={() => viewRecord(item)}
+                    disabled={!item.diagnosis_detail}
+                    title={item.diagnosis_detail ? undefined : "예전 기록이라 상세 내역이 없어요"}
+                    className="h-8 flex-none rounded-lg border border-[#00C9C8] px-3.5 text-[12px] font-bold text-[#0891B2] transition-colors hover:bg-[#E0F7F7] disabled:cursor-not-allowed disabled:border-[#E4E8EE] disabled:text-[#9AA4B0] disabled:hover:bg-transparent"
                   >
-                    다시 진단하기
+                    기록 보기
                   </button>
                 </div>
               ))}
