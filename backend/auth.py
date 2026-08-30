@@ -43,6 +43,9 @@ class TokenResponse(BaseModel):
 class RefreshRequest(BaseModel):
     refresh_token: str
 
+class UpdateMeRequest(BaseModel):
+    nickname: str
+
 class UserResponse(BaseModel):
     id: int
     email: str
@@ -86,6 +89,37 @@ def decode_token(token: str) -> dict:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={"error": "토큰이 유효하지 않거나 만료됐어요.", "code": "INVALID_TOKEN"}
         )
+
+def get_current_user(
+    authorization: Optional[str] = Header(None), db: Session = Depends(get_db)
+) -> User:
+    """Authorization: Bearer <access_token> 헤더로 로그인된 유저를 조회.
+    /me, /me(PATCH), /me(DELETE) 등 인증이 필요한 엔드포인트가 공통으로 사용."""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail={"error": "로그인이 필요해요.", "code": "UNAUTHORIZED"}
+        )
+    token = authorization.replace("Bearer ", "")
+    payload = decode_token(token)
+    if payload.get("type") != "access":
+        raise HTTPException(
+            status_code=401,
+            detail={"error": "액세스 토큰이 아니에요.", "code": "INVALID_TOKEN_TYPE"}
+        )
+    user_id = int(payload.get("sub"))
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail={"error": "사용자를 찾을 수 없어요.", "code": "USER_NOT_FOUND"}
+        )
+    if not user.is_active:
+        raise HTTPException(
+            status_code=403,
+            detail={"error": "비활성화된 계정이에요.", "code": "ACCOUNT_DISABLED"}
+        )
+    return user
 
 # ── 엔드포인트 ─────────────────────────────────────────────
 
@@ -233,24 +267,37 @@ def refresh(req: RefreshRequest, db: Session = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserResponse)
-def me(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
-    if not authorization or not authorization.startswith("Bearer "):
+def me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+
+@router.patch("/me", response_model=UserResponse)
+def update_me(
+    req: UpdateMeRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """마이페이지 닉네임 변경."""
+    nickname = req.nickname.strip()
+    if len(nickname) < 2 or len(nickname) > 20:
         raise HTTPException(
-            status_code=401,
-            detail={"error": "로그인이 필요해요.", "code": "UNAUTHORIZED"}
+            status_code=400,
+            detail={"error": "닉네임은 2~20자 사이여야 해요.", "code": "INVALID_NICKNAME"}
         )
-    token = authorization.replace("Bearer ", "")
-    payload = decode_token(token)
-    if payload.get("type") != "access":
-        raise HTTPException(
-            status_code=401,
-            detail={"error": "액세스 토큰이 아니에요.", "code": "INVALID_TOKEN_TYPE"}
-        )
-    user_id = int(payload.get("sub"))
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(
-            status_code=401,
-            detail={"error": "사용자를 찾을 수 없어요.", "code": "USER_NOT_FOUND"}
-        )
-    return user
+    current_user.nickname = nickname
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
+@router.delete("/me")
+def delete_me(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """회원 탈퇴 — is_active를 꺼서 소프트 삭제 처리(스키마 변경 없음).
+    이메일/구글 계정 자체는 남겨두므로, 같은 이메일로 재가입은 별도 정책이 필요하면
+    나중에 추가 처리(이메일 익명화 등)를 고려."""
+    current_user.is_active = False
+    db.commit()
+    return {"message": "회원 탈퇴가 완료됐어요."}
