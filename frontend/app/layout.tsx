@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import GoogleAuthProvider from "@/src/components/GoogleAuthProvider";
 
 export const metadata: Metadata = {
   title: "Minifi",
@@ -28,7 +29,7 @@ export default function RootLayout({
             "Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
         }}
       >
-        {children}
+        <GoogleAuthProvider>{children}</GoogleAuthProvider>
       </body>
     </html>
   );
