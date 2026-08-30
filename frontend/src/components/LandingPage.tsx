@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 // ============================================================
@@ -53,8 +53,10 @@ export default function LandingPage() {
       <style>{`
         [data-reveal]{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
         [data-reveal].is-in{opacity:1;transform:none}
+        @keyframes ud-click{0%{opacity:.9;transform:scale(.4)}70%{opacity:.35;transform:scale(1.5)}100%{opacity:0;transform:scale(1.9)}}
         @media (prefers-reduced-motion: reduce){
           [data-reveal]{transition:none}
+          .ud-cursor{display:none}
         }
       `}</style>
 
@@ -102,28 +104,7 @@ export default function LandingPage() {
               <span className="h-2.5 w-2.5 rounded-full bg-[#E4E8EE]" />
               <span className="h-2.5 w-2.5 rounded-full bg-[#E4E8EE]" />
             </div>
-            <div className="space-y-3 p-5 text-[14px] leading-[1.7]">
-              <p className="text-[#9AA4B0]">
-                음 저기 혹시 가능하면{" "}
-                <u className="decoration-[#E5484D] decoration-wavy">
-                  로그인이랑 상품목록이랑 장바구니
-                </u>
-                까지{" "}
-                <u className="decoration-[#E5484D] decoration-wavy">전부 다</u>{" "}
-                만들어주시고,{" "}
-                <u className="decoration-[#E5484D] decoration-wavy">이거</u> 좀
-                어떻게든 해주세요.
-              </p>
-              <p className="text-[#182430]">
-                다음 순서로 진행해주세요 —{" "}
-                <b className="font-bold">1) 로그인</b>{" "}
-                <b className="font-bold">2) 상품 목록</b>{" "}
-                <b className="font-bold">3) 장바구니</b>{" "}
-                <span className="ml-1 inline-block rounded-md bg-[#E0F7F7] px-2 py-0.5 text-[12px] font-bold text-[#0891B2]">
-                  ＋조건 Python으로 작성
-                </span>
-              </p>
-            </div>
+            <HeroDemoText />
           </div>
         </div>
 
@@ -200,6 +181,9 @@ export default function LandingPage() {
             className="mb-2 text-[12px] font-extrabold uppercase tracking-[0.18em] text-[#9AA4B0]"
           >
             이용 방법
+          </div>
+          <div data-reveal style={{ transitionDelay: ".05s" }}>
+            <UseDemo />
           </div>
           <div className="mt-10 grid grid-cols-1 gap-8 md:grid-cols-3">
             {STEPS.map((s, i) => (
@@ -298,3 +282,181 @@ const STEPS = [
   { n: "02", title: "표시된 부분을 확인해요", desc: "색으로 표시된 곳에 이유가 함께 떠요. 적용하거나 건너뛰면 돼요." },
   { n: "03", title: "완료를 눌러 비교해요", desc: "최적화된 프롬프트와 모델별 예상 비용을 한 화면에서 봐요." },
 ];
+
+// ── 히어로 데모 카드: "지저분한 프롬프트" ↔ "정리된 프롬프트" 크로스페이드 ──
+// 두 문단을 grid의 같은 셀에 겹쳐서(grid-area 1/1) 배치 — absolute 포지셔닝 없이도
+// 카드 높이가 더 긴 쪽에 맞춰 자연스럽게 정해지고, opacity만 토글하면 됨.
+function HeroDemoText() {
+  const [showClean, setShowClean] = useState(false);
+
+  useEffect(() => {
+    const prefersReduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (prefersReduced) {
+      setShowClean(true); // 애니메이션 없이 최종(정리된) 상태로 고정
+      return;
+    }
+    const id = setInterval(() => setShowClean((v) => !v), 3200);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <div className="grid p-5 text-[14px] leading-[1.7]">
+      <p
+        className={`[grid-area:1/1] text-[#9AA4B0] transition-all duration-500 ${
+          showClean ? "opacity-0" : "opacity-100"
+        }`}
+      >
+        음 저기 혹시 가능하면{" "}
+        <u className="decoration-[#E5484D] decoration-wavy">
+          로그인이랑 상품목록이랑 장바구니
+        </u>
+        까지{" "}
+        <u className="decoration-[#E5484D] decoration-wavy">전부 다</u>{" "}
+        만들어주시고,{" "}
+        <u className="decoration-[#E5484D] decoration-wavy">이거</u> 좀
+        어떻게든 해주세요.
+      </p>
+      <p
+        className={`[grid-area:1/1] text-[#182430] transition-all duration-500 ${
+          showClean ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        다음 순서로 진행해주세요 —{" "}
+        <b className="font-bold">1) 로그인</b>{" "}
+        <b className="font-bold">2) 상품 목록</b>{" "}
+        <b className="font-bold">3) 장바구니</b>{" "}
+        <span className="ml-1 inline-block rounded-md bg-[#E0F7F7] px-2 py-0.5 text-[12px] font-bold text-[#0891B2]">
+          ＋조건 Python으로 작성
+        </span>
+      </p>
+    </div>
+  );
+}
+
+// ── "이용 방법" 미니 데모: 클릭 → 텍스트 수정 → 조건 칩 추가 → 토큰 감소, 반복 ──
+// 목업(ud-demo)의 타임라인을 그대로 이식. 색상은 목업의 민트 팔레트가 아니라
+// 이 페이지가 이미 쓰고 있는 아쿠아 팔레트(#00C9C8/#0891B2/#E0F7F7)로 맞춤.
+function UseDemo() {
+  const [fixed, setFixed] = useState(false);
+  const [cursorOn, setCursorOn] = useState(false);
+  const [chipShown, setChipShown] = useState(false);
+  const [tokenNum, setTokenNum] = useState(236);
+  const [deltaShown, setDeltaShown] = useState(false);
+
+  useEffect(() => {
+    const prefersReduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (prefersReduced) {
+      // 애니메이션 없이 최종 상태로 고정
+      setFixed(true);
+      setChipShown(true);
+      setTokenNum(204);
+      setDeltaShown(true);
+      return;
+    }
+
+    let cancelled = false;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const after = (ms: number, fn: () => void) => {
+      timers.push(setTimeout(fn, ms));
+    };
+
+    function animateTokenNumber(from: number, to: number, dur: number) {
+      const t0 = Date.now();
+      function step() {
+        if (cancelled) return;
+        const p = Math.min(1, (Date.now() - t0) / dur);
+        setTokenNum(Math.round(from + (to - from) * p));
+        if (p < 1) timers.push(setTimeout(step, 20));
+      }
+      step();
+    }
+
+    function cycle() {
+      setFixed(false);
+      setCursorOn(false);
+      setChipShown(false);
+      setDeltaShown(false);
+      setTokenNum(236);
+
+      after(650, () => setCursorOn(true));
+      after(950, () => {
+        setFixed(true);
+        setCursorOn(false);
+      });
+      after(2500, () => setChipShown(true));
+      after(4400, () => animateTokenNumber(236, 204, 550));
+      after(5000, () => setDeltaShown(true));
+      after(7600, cycle);
+    }
+    cycle();
+
+    return () => {
+      cancelled = true;
+      timers.forEach(clearTimeout);
+    };
+  }, []);
+
+  return (
+    <div className="mx-auto max-w-[600px] overflow-hidden rounded-[16px] border border-[#E4E8EE] bg-white shadow-[0_24px_56px_-28px_rgba(20,30,40,0.24)]">
+      <div className="flex gap-2.5 border-b border-[#EEF1F4] px-[18px] py-3.5">
+        <span className="h-2.5 w-2.5 rounded-full bg-[#E4E8EE]" />
+        <span className="h-2.5 w-2.5 rounded-full bg-[#E4E8EE]" />
+        <span className="h-2.5 w-2.5 rounded-full bg-[#E4E8EE]" />
+      </div>
+      <div className="p-[34px_34px_30px]">
+        <p className="mb-6 text-[19px] leading-[1.75] text-[#182430]">
+          <span className="relative inline-block">
+            {cursorOn && (
+              <span
+                className="ud-cursor pointer-events-none absolute -left-1.5 -top-1.5 h-[22px] w-[22px] rounded-full border-[3px] border-[#0891B2]"
+                style={{ animation: "ud-click .55s ease-out" }}
+              />
+            )}
+            <span
+              className={
+                fixed
+                  ? "rounded-[5px] bg-[#E0F7F7] px-[5px] font-bold text-[#0891B2] after:ml-[3px] after:text-[13px] after:font-extrabold after:content-['✓']"
+                  : "border-b-2 border-dotted border-[#E5484D]"
+              }
+            >
+              {fixed ? "장바구니 담기 버튼" : "이거"}
+            </span>
+          </span>{" "}
+          좀 어떻게든 해주세요.
+        </p>
+        <div className="min-h-[36px]">
+          <span
+            className={`inline-block rounded-[9px] border border-[#A5E8E7] bg-[#E0F7F7] px-[13px] py-[7px] text-[15px] font-extrabold text-[#0891B2] transition-all duration-400 ${
+              chipShown
+                ? "translate-y-0 scale-100 opacity-100"
+                : "translate-y-1.5 scale-95 opacity-0"
+            }`}
+          >
+            ＋조건 Python으로 작성해주세요
+          </span>
+        </div>
+        <div className="mt-5 flex items-center justify-between border-t border-[#EEF1F4] pt-5">
+          <span className="text-[14px] font-bold text-[#9AA4B0]">
+            예상 토큰
+          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[26px] font-extrabold tabular-nums text-[#182430]">
+              {tokenNum}
+            </span>
+            <span
+              className={`rounded-[8px] bg-[#E0F7F7] px-[9px] py-1 text-[14px] font-extrabold text-[#0891B2] transition-opacity duration-400 ${
+                deltaShown ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              −32 · −14%
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
