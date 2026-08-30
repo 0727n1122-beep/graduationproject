@@ -22,12 +22,13 @@ MODELS = {
 }
 
 def calculate_costs(total_tokens: int) -> dict:
-    """누적 토큰 기준 모델별 비용 계산"""
+    """누적 토큰 기준 모델별 비용 계산
+    시뮬레이션이라 출력 토큰량은 입력과 동일하다고 가정 -> input/output 가격 모두 반영"""
     costs = {}
     for model, price in MODELS.items():
-        # 입력 토큰 기준으로만 계산 (시뮬레이션이라 출력 토큰은 동일하다고 가정)
-        cost = (total_tokens / 1_000_000) * price["input"]
-        costs[model] = round(cost, 6)
+        input_cost = (total_tokens / 1_000_000) * price["input"]
+        output_cost = (total_tokens / 1_000_000) * price["output"]
+        costs[model] = round(input_cost + output_cost, 6)
     return costs
 
 # ── 요청/응답 스키마 ───────────────────────────────────────
