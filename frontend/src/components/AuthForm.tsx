@@ -56,15 +56,64 @@ export default function AuthForm() {
     return e;
   }
 
-  function handleSubmit() {
+  const [submitting, setSubmitting] = useState(false);
+
+  /** 백엔드 /auth/* 에러는 HTTPException(detail={"error","code"}) 형태라
+   *  {"detail":{"error": "..."}}로 온다 — /optimize처럼 평평한 {"error"}가 아님. */
+  function extractError(data: unknown): string | undefined {
+    if (data && typeof data === "object" && "detail" in data) {
+      const detail = (data as { detail?: unknown }).detail;
+      if (detail && typeof detail === "object" && "error" in detail) {
+        return (detail as { error?: string }).error;
+      }
+    }
+    return undefined;
+  }
+
+  async function handleSubmit() {
     const e = validate();
     setErrors(e);
-    if (Object.keys(e).length > 0) return;
+    if (Object.keys(e).length > 0 || submitting) return;
 
-    // TODO: 백엔드 인증 API 호출 (로그인/회원가입 분기 + JWT 저장)
-    alert(
-      `${isSignup ? "회원가입" : "로그인"} 형식 통과! (백엔드 API 연동 예정)`,
-    );
+    setSubmitting(true);
+    try {
+      if (isSignup) {
+        const registerRes = await fetch(`${API_URL}/auth/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email.trim(), password: pw, nickname: name.trim() }),
+        });
+        const registerData = await registerRes.json();
+        if (!registerRes.ok) {
+          setErrors({ email: extractError(registerData) ?? "회원가입에 실패했어요." });
+          return;
+        }
+        // 회원가입 자체는 토큰을 안 주므로, 바로 로그인해서 토큰을 받는다
+      }
+
+      const loginRes = await fetch(`${API_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password: pw }),
+      });
+      const loginData = await loginRes.json();
+      if (!loginRes.ok) {
+        if (isSignup) {
+          // 가입은 됐는데 자동 로그인만 실패한 경우 — 로그인 탭으로 보내서 직접 시도하게
+          switchMode("login");
+          return;
+        }
+        setErrors({ pw: extractError(loginData) ?? "이메일 또는 비밀번호가 틀렸어요." });
+        return;
+      }
+      localStorage.setItem("access_token", loginData.access_token);
+      localStorage.setItem("refresh_token", loginData.refresh_token);
+      router.push("/diagnose");
+    } catch {
+      setErrors({ email: "서버에 연결할 수 없어요. 잠시 후 다시 시도해주세요." });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -295,9 +344,10 @@ export default function AuthForm() {
         <button
           type="button"
           onClick={handleSubmit}
-          className="w-full rounded-[10px] bg-[#00C9C8] py-3 text-[14.5px] font-extrabold text-white transition-colors hover:bg-[#0891B2]"
+          disabled={submitting}
+          className="w-full rounded-[10px] bg-[#00C9C8] py-3 text-[14.5px] font-extrabold text-white transition-colors hover:bg-[#0891B2] disabled:cursor-not-allowed disabled:bg-[#9AA4B0]"
         >
-          {isSignup ? "회원가입" : "로그인"}
+          {submitting ? "처리 중…" : isSignup ? "회원가입" : "로그인"}
         </button>
 
         {/* 구분선 */}
