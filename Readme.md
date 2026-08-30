@@ -17,7 +17,7 @@
 
 ## 🔗 배포 링크
 - **서비스**: https://amused-clarity-production-ef3e.up.railway.app/
-- **백엔드 API**: https://graduationproject-production-14f7.up.railway.app/docs
+- **백엔드 API**: https://graduationproject-production-7999.up.railway.app/docs
 
 ---
 
