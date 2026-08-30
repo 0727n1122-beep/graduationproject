@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DiagnosisCards from "@/src/components/DiagnosisCards";
 import DiagnosisSidebar from "@/src/components/DiagnosisSidebar";
 import PromptEntry from "@/src/components/PromptEntry";
 import type { OptimizeResponse } from "@/types/diagnosis";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const REPLAY_KEY = "minifi_replay_prompt";
 
 export default function DiagnosePage() {
   const [prompt, setPrompt] = useState("");
@@ -14,6 +15,15 @@ export default function DiagnosePage() {
   const [result, setResult] = useState<OptimizeResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // 히스토리 화면의 "다시 진단하기"로 넘어온 경우 원본 프롬프트를 입력창에 채워줌
+    const replay = sessionStorage.getItem(REPLAY_KEY);
+    if (replay) {
+      sessionStorage.removeItem(REPLAY_KEY);
+      setPrompt(replay);
+    }
+  }, []);
 
   async function handleSubmit() {
     if (!prompt.trim() || loading) return;
