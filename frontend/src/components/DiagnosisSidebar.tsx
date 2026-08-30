@@ -7,6 +7,7 @@
 // ============================================================
 
 import type { ReactNode } from "react";
+import Link from "next/link";
 
 export type SidebarView = "diagnosis" | "history" | "mypage";
 
@@ -58,12 +59,13 @@ export default function DiagnosisSidebar({
 }) {
   return (
     <aside className="flex w-[76px] flex-none flex-col items-center gap-[22px] bg-[#182430] py-5">
-      <button
+      <Link
+        href="/"
         title="Minifi 소개"
         className="flex h-[38px] w-[38px] items-center justify-center rounded-[10px] bg-[#00C9C8] text-[16px] font-extrabold text-white transition-transform hover:scale-[1.06]"
       >
         M
-      </button>
+      </Link>
       <nav className="mt-1.5 flex flex-col gap-1.5">
         {NAV_ITEMS.map((item) => (
           <button
