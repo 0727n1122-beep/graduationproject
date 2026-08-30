@@ -104,7 +104,8 @@ export default function MyPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setSaveError(data.error ?? "저장에 실패했어요.");
+        // /auth/me 에러는 HTTPException(detail={"error","code"}) 형태라 {"detail":{"error"}}로 온다
+        setSaveError(data.detail?.error ?? "저장에 실패했어요.");
         return;
       }
       setUser(data);
