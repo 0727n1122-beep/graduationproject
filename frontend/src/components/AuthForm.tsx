@@ -94,7 +94,7 @@ export default function AuthForm() {
       const data = await res.json();
       localStorage.setItem("access_token", data.access_token);
       localStorage.setItem("refresh_token", data.refresh_token);
-      router.push("/");
+      router.push("/diagnose");
     } catch {
       alert("구글 로그인에 실패했어요. 다시 시도해주세요.");
     }
