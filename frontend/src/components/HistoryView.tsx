@@ -5,22 +5,30 @@
 // ------------------------------------------------------------
 // docs/minifi-diagnosis-mockup-v4_1.html의 히스토리 뷰(#view-history)를
 // 실제 배포 화면으로 이식. 목업과 다른 점:
-//   - 목업은 히스토리 목록 → 통계 카드 → 분포/추이 차트 순이었지만,
-//     여기서는 통계 카드를 위로, 히스토리 목록을 아래로 배치.
+//   - 목업은 히스토리 목록 → 통계 카드 → 분포 차트 순이었지만,
+//     여기서는 통계 카드 + 분포 차트를 위로, 히스토리 목록을 아래로 배치.
 //   - 히스토리 목록은 최근 10건만 표시 (백엔드가 이미 최신순으로 내려줌).
-//   - "이슈 유형 분포"/"최근 절감률 추이" 차트는 목업에서 FIXTURES의
-//     카테고리별 집계로 그렸지만, 실제 /history 응답에는 이슈 카테고리별
-//     내역이 없어(issue_count 총합만 있음) 그대로 이식할 수 없어 제외했음.
+//   - 통계 카드는 목업과 동일하게 진단 수/이슈 수/카테고리 종류/최다 발견 유형
+//     4개만 두고, 토큰 절감 관련 카드는 뺐음 — 실제 saved_percent가 낮고
+//     (많으면 오히려 늘어나는 경우도 있음) 이슈 발견/카테고리 쪽이 더 의미
+//     있는 지표라서. 절감 토큰/퍼센트는 목록의 각 항목 배지에만 남겨둠.
+//   - "최근 절감률 추이" 차트는 시계열 데이터가 없어 목업도 그룹별 분포로
+//     대체했던 부분이라 이식하지 않음.
 // 아쿠아블루(#00C9C8/#0891B2) 테마 — DiagnosisCards.tsx와 동일한 팔레트.
 // ============================================================
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { HistoryItem } from "@/types/history";
+import { CATEGORY_NAME, type IssueCategory } from "@/types/diagnosis";
 import { truncateForDisplay } from "@/src/lib/diagnosisEngine";
 
 const REPLAY_KEY = "minifi_replay_prompt";
 const RECENT_LIMIT = 10;
+
+function categoryLabel(cat: string): string {
+  return CATEGORY_NAME[cat as IssueCategory] ?? cat;
+}
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -34,13 +42,18 @@ export default function HistoryView({ items }: { items: HistoryItem[] }) {
   const recent = items.slice(0, RECENT_LIMIT);
 
   const count = items.length;
-  // DiagnosisCards.tsx의 절감률 표시와 동일하게, 구조화하면서 토큰이 오히려 늘어난 경우
-  // (예: MONOLITHIC_REQUEST 분해)는 "절감"이 아니므로 0으로 바닥 처리해서 보여줌.
-  const totalSavedTokens = items.reduce((sum, it) => sum + Math.max(0, it.saved_tokens), 0);
-  const avgSavedPercent = count
-    ? Math.round(items.reduce((sum, it) => sum + Math.max(0, it.saved_percent), 0) / count)
-    : 0;
   const totalIssues = items.reduce((sum, it) => sum + it.issue_count, 0);
+
+  const categoryTally: Record<string, number> = {};
+  items.forEach((it) => {
+    if (!it.categories) return; // categories 컬럼 추가 이전에 저장된 항목
+    for (const [cat, n] of Object.entries(it.categories)) {
+      categoryTally[cat] = (categoryTally[cat] || 0) + n;
+    }
+  });
+  const categoryEntries = Object.entries(categoryTally).sort((a, b) => b[1] - a[1]);
+  const topCategory = categoryEntries[0];
+  const maxCategoryCount = Math.max(1, ...categoryEntries.map(([, n]) => n));
 
   function replay(item: HistoryItem) {
     sessionStorage.setItem(REPLAY_KEY, item.original_prompt);
@@ -74,10 +87,38 @@ export default function HistoryView({ items }: { items: HistoryItem[] }) {
           {/* ── 통계 카드 ────────────── */}
           <div className="grid grid-cols-2 gap-3.5 md:grid-cols-4">
             <StatCard label="진단한 프롬프트" value={String(count)} suffix="건" />
-            <StatCard label="누적 절감 토큰" value={totalSavedTokens.toLocaleString()} suffix="토큰" />
-            <StatCard label="평균 절감률" value={String(avgSavedPercent)} suffix="%" />
-            <StatCard label="발견된 이슈" value={String(totalIssues)} suffix="건" />
+            <StatCard label="총 이슈 수" value={String(totalIssues)} suffix="건" />
+            <StatCard label="카테고리 종류" value={String(categoryEntries.length)} suffix="종" />
+            <StatCard
+              label="최다 발견 유형"
+              value={topCategory ? categoryLabel(topCategory[0]) : "-"}
+              suffix={topCategory ? `${topCategory[1]}건` : ""}
+            />
           </div>
+
+          {/* ── 이슈 유형 분포 ────────────── */}
+          {categoryEntries.length > 0 && (
+            <div className="rounded-xl border border-[#E4E8EE] bg-white">
+              <div className="flex items-center justify-between gap-2.5 border-b border-[#EEF1F4] px-5 py-3.5">
+                <h2 className="text-[12.5px] font-extrabold tracking-[.01em] text-[#5C6773]">이슈 유형 분포</h2>
+                <span className="font-mono text-[11.5px] font-bold text-[#9AA4B0]">CATEGORY</span>
+              </div>
+              <div className="flex flex-col gap-2.5 p-5">
+                {categoryEntries.map(([cat, n]) => (
+                  <div key={cat} className="flex items-center gap-2.5">
+                    <span className="w-[112px] flex-none text-[11.5px] font-bold text-[#182430]">{categoryLabel(cat)}</span>
+                    <div className="relative h-4 flex-1 overflow-hidden rounded-md bg-[#F5F7F9]">
+                      <div
+                        className="absolute inset-y-0 left-0 rounded-md bg-[#00C9C8] opacity-90"
+                        style={{ width: `${Math.max(4, (n / maxCategoryCount) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="w-[28px] flex-none text-right font-mono text-[11px] font-bold text-[#5C6773]">{n}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* ── 히스토리 목록 (최근 10건) ────────────── */}
           <div className="rounded-xl border border-[#E4E8EE] bg-white">
