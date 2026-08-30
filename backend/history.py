@@ -21,6 +21,7 @@ class HistorySaveRequest(BaseModel):
     saved_percent: float
     issue_count: int = 0
     categories: Optional[CategoryTally] = None
+    diagnosis_detail: Optional[dict] = None
 
 class HistoryResponse(BaseModel):
     id: int
@@ -32,6 +33,7 @@ class HistoryResponse(BaseModel):
     saved_percent: float
     issue_count: int
     categories: Optional[CategoryTally] = None
+    diagnosis_detail: Optional[dict] = None
     created_at: datetime
 
     class Config:
@@ -79,6 +81,7 @@ def save_history(
         saved_percent=req.saved_percent,
         issue_count=req.issue_count,
         categories=req.categories,
+        diagnosis_detail=req.diagnosis_detail,
     )
     db.add(history)
     db.commit()

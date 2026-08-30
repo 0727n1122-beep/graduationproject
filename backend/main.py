@@ -20,15 +20,16 @@ import models  # Base에 테이블 등록용
 
 Base.metadata.create_all(bind=engine)  # 서버 시작 시 테이블 자동 생성
 
-# create_all은 이미 있는 테이블은 건드리지 않으므로, 나중에 모델에 추가된 컬럼(categories)이
+# create_all은 이미 있는 테이블은 건드리지 않으므로, 나중에 모델에 추가된 컬럼이
 # 기존에 배포된 DB의 prompt_histories 테이블엔 없을 수 있음 — 없을 때만 안전하게 추가.
 _inspector = inspect(engine)
 if "prompt_histories" in _inspector.get_table_names():
     _existing_cols = {c["name"] for c in _inspector.get_columns("prompt_histories")}
-    if "categories" not in _existing_cols:
-        _col_type = "JSON" if engine.dialect.name == "postgresql" else "TEXT"
-        with engine.begin() as conn:
-            conn.execute(text(f"ALTER TABLE prompt_histories ADD COLUMN categories {_col_type}"))
+    _json_col_type = "JSON" if engine.dialect.name == "postgresql" else "TEXT"
+    for _new_col in ("categories", "diagnosis_detail"):
+        if _new_col not in _existing_cols:
+            with engine.begin() as conn:
+                conn.execute(text(f"ALTER TABLE prompt_histories ADD COLUMN {_new_col} {_json_col_type}"))
 
 # ── 라우터 import ──────────────────────────────────────────
 from auth import router as auth_router, decode_token
@@ -541,6 +542,11 @@ MISSING_CONSTRAINT는 issues 배열에 넣지 않는다. missing_constraints 배
                         saved_percent=saved_percent,
                         issue_count=len(issues_with_guides),
                         categories=category_tally or None,
+                        diagnosis_detail={
+                            "issues": issues_with_guides,
+                            "missing_constraints": missing_constraints,
+                            "feedback": feedback,
+                        },
                     )
                     db.add(history)
                     db.commit()

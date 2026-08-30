@@ -33,6 +33,9 @@ class PromptHistory(Base):
     saved_percent = Column(Float, nullable=False)
     issue_count = Column(Integer, default=0)       # 발견된 이슈 개수
     categories = Column(JSON, nullable=True)        # 카테고리별 이슈 개수, 예: {"AMBIGUOUS": 2, "CODE_DUMP": 1}
+    # 그때 진단했던 issues/missing_constraints/feedback 원본 그대로.
+    # 히스토리 "기록 보기"에서 /optimize를 다시 호출하지 않고 그대로 재현하는 데 씀.
+    diagnosis_detail = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="histories")
