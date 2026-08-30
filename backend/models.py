@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Float, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
@@ -32,6 +32,7 @@ class PromptHistory(Base):
     saved_tokens = Column(Integer, nullable=False)
     saved_percent = Column(Float, nullable=False)
     issue_count = Column(Integer, default=0)       # 발견된 이슈 개수
+    categories = Column(JSON, nullable=True)        # 카테고리별 이슈 개수, 예: {"AMBIGUOUS": 2, "CODE_DUMP": 1}
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="histories")

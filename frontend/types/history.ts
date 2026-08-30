@@ -15,5 +15,7 @@ export interface HistoryItem {
   saved_tokens: number;
   saved_percent: number;
   issue_count: number;
+  /** 카테고리별 이슈 개수, 예: {"AMBIGUOUS": 2, "CODE_DUMP": 1}. categories 컬럼 추가 이전에 저장된 항목은 null. */
+  categories: Record<string, number> | null;
   created_at: string;
 }

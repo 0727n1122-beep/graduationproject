@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+
+CategoryTally = dict[str, int]
 from database import get_db
 from models import PromptHistory, User
 from auth import decode_token
@@ -18,6 +20,7 @@ class HistorySaveRequest(BaseModel):
     saved_tokens: int
     saved_percent: float
     issue_count: int = 0
+    categories: Optional[CategoryTally] = None
 
 class HistoryResponse(BaseModel):
     id: int
@@ -28,6 +31,7 @@ class HistoryResponse(BaseModel):
     saved_tokens: int
     saved_percent: float
     issue_count: int
+    categories: Optional[CategoryTally] = None
     created_at: datetime
 
     class Config:
@@ -74,6 +78,7 @@ def save_history(
         saved_tokens=req.saved_tokens,
         saved_percent=req.saved_percent,
         issue_count=req.issue_count,
+        categories=req.categories,
     )
     db.add(history)
     db.commit()
