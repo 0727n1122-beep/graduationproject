@@ -68,10 +68,15 @@ export default function AuthForm() {
   }
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
   const router = useRouter();
   const hiddenGoogleBtnRef = useRef<HTMLDivElement>(null);
 
   function handleGoogle() {
+    if (!GOOGLE_CLIENT_ID) {
+      alert("구글 로그인이 아직 설정되지 않았어요.");
+      return;
+    }
     // 실제 인증은 숨겨진 공식 구글 버튼(GoogleLogin)에 위임 — 기존 커스텀 버튼 디자인 유지
     const officialBtn = hiddenGoogleBtnRef.current?.querySelector(
       'div[role="button"]',
@@ -300,16 +305,21 @@ export default function AuthForm() {
           또는
         </div>
 
-        {/* 구글 로그인 — 실제 인증은 숨겨진 공식 버튼(GoogleLogin)에 위임, 화면엔 커스텀 버튼만 보임 */}
-        <div
-          ref={hiddenGoogleBtnRef}
-          style={{ position: "absolute", top: -9999, left: -9999, opacity: 0, pointerEvents: "none" }}
-        >
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={() => alert("구글 로그인에 실패했어요. 다시 시도해주세요.")}
-          />
-        </div>
+        {/* 구글 로그인 — 실제 인증은 숨겨진 공식 버튼(GoogleLogin)에 위임, 화면엔 커스텀 버튼만 보임.
+            GoogleLogin은 GoogleOAuthProvider 안에서만 렌더링 가능해서, 클라이언트 ID가 없을 때(=
+            GoogleAuthProvider가 provider를 안 씌운 상태) 렌더링하면 그대로 크래시한다 — 특히 이
+            페이지가 정적으로 prerender될 때 빌드 자체가 죽는다. 클라이언트 ID가 있을 때만 마운트. */}
+        {GOOGLE_CLIENT_ID && (
+          <div
+            ref={hiddenGoogleBtnRef}
+            style={{ position: "absolute", top: -9999, left: -9999, opacity: 0, pointerEvents: "none" }}
+          >
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => alert("구글 로그인에 실패했어요. 다시 시도해주세요.")}
+            />
+          </div>
+        )}
         <button
           type="button"
           onClick={handleGoogle}
