@@ -8,10 +8,10 @@
 //   - 목업은 히스토리 목록 → 통계 카드 → 분포 차트 순이었지만,
 //     여기서는 통계 카드 + 분포 차트를 위로, 히스토리 목록을 아래로 배치.
 //   - 히스토리 목록은 최근 10건만 표시 (백엔드가 이미 최신순으로 내려줌).
-//   - 통계 카드는 목업과 동일하게 진단 수/이슈 수/카테고리 종류/최다 발견 유형
-//     4개만 두고, 토큰 절감 관련 카드는 뺐음 — 실제 saved_percent가 낮고
-//     (많으면 오히려 늘어나는 경우도 있음) 이슈 발견/카테고리 쪽이 더 의미
-//     있는 지표라서. 절감 토큰/퍼센트는 목록의 각 항목 배지에만 남겨둠.
+//   - 통계 카드는 목업의 4종(진단 수/이슈 수/카테고리 종류/최다 발견 유형)에서
+//     "카테고리 종류"를 "누적 절감 토큰"으로 바꾸고, "예상 절감 재질문"을
+//     추가해 총 5개. "이슈 유형 분포" 차트에 카테고리 개수/분포가 이미 나오므로
+//     카드에서는 중복 대신 절감 토큰을 보여줌.
 //   - "최근 절감률 추이" 차트는 시계열 데이터가 없어 목업도 그룹별 분포로
 //     대체했던 부분이라 이식하지 않음.
 // 아쿠아블루(#00C9C8/#0891B2) 테마 — DiagnosisCards.tsx와 동일한 팔레트.
@@ -43,6 +43,9 @@ export default function HistoryView({ items }: { items: HistoryItem[] }) {
 
   const count = items.length;
   const totalIssues = items.reduce((sum, it) => sum + it.issue_count, 0);
+  // DiagnosisCards.tsx의 절감률 표시와 동일하게, 구조화하면서 토큰이 오히려 늘어난 경우
+  // (예: MONOLITHIC_REQUEST 분해)는 "절감"이 아니므로 0으로 바닥 처리해서 합산.
+  const totalSavedTokens = items.reduce((sum, it) => sum + Math.max(0, it.saved_tokens), 0);
   // DiagnosisCards.tsx/diagnosisEngine.ts의 iterationEstimate와 같은 공식(이슈 수×1.4+1)을
   // 히스토리 저장 시점의 issue_count로 계산 — 별도 스키마 변경 없이 바로 구할 수 있음.
   // 백엔드가 저장하는 optimized_prompt는 이슈를 전부 반영한 버전이라 "이대로 다 적용했다면"
@@ -96,7 +99,7 @@ export default function HistoryView({ items }: { items: HistoryItem[] }) {
           <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-5">
             <StatCard label="진단한 프롬프트" value={String(count)} suffix="건" />
             <StatCard label="총 이슈 수" value={String(totalIssues)} suffix="건" />
-            <StatCard label="카테고리 종류" value={String(categoryEntries.length)} suffix="종" />
+            <StatCard label="누적 절감 토큰" value={totalSavedTokens.toLocaleString()} suffix="토큰" />
             <StatCard
               label="최다 발견 유형"
               value={topCategory ? categoryLabel(topCategory[0]) : "-"}
