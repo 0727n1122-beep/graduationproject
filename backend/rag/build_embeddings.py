@@ -3,8 +3,7 @@ RAG 코퍼스 빌드 스크립트 — chunks.json의 각 청크를 Voyage AI로 
 corpus.json(청크 + 벡터)을 만든다. 문서가 안 바뀌는 한 이 스크립트는 딱 한 번만
 실행하면 되고, 서비스 운영 중(요청마다)에는 다시 호출하지 않는다.
 
-사용법:
-    export VOYAGE_API_KEY=pa-...
+사용법 (backend/.env에 VOYAGE_API_KEY가 있으면 자동으로 읽음):
     python3 rag/build_embeddings.py
 """
 import json
@@ -12,6 +11,7 @@ import os
 import sys
 
 import requests
+from dotenv import load_dotenv
 
 VOYAGE_API_URL = "https://api.voyageai.com/v1/embeddings"
 MODEL = "voyage-multilingual-2"  # 영어 가이드 문서 vs 한국어 사용자 프롬프트를 매칭해야 해서 다국어 모델 사용
@@ -19,6 +19,9 @@ MODEL = "voyage-multilingual-2"  # 영어 가이드 문서 vs 한국어 사용�
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CHUNKS_PATH = os.path.join(BASE_DIR, "chunks.json")
 CORPUS_PATH = os.path.join(BASE_DIR, "corpus.json")
+
+# 실행 위치(cwd)와 무관하게 backend/.env를 정확히 찾도록 경로를 직접 지정
+load_dotenv(os.path.join(BASE_DIR, "..", ".env"))
 
 
 def embed_texts(texts: list[str], api_key: str) -> list[list[float]]:

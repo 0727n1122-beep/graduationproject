@@ -16,6 +16,7 @@ import type {
   MissingConstraint,
   MissingConstraintState,
   MonoStepState,
+  SourceCitation,
   DiagnosisCardsProps,
 } from "@/types/diagnosis";
 import { CATEGORY_NAME } from "@/types/diagnosis";
@@ -471,6 +472,25 @@ function IssuePopover({
       <div className="mb-1.5 font-bold text-[#182430]">&ldquo;{truncateForDisplay(issue.snippet, 110)}&rdquo;</div>
       <div className="mb-2.5 font-medium text-[#5C6773]">{issue.explanation}</div>
 
+      {issue.source && issue.source.length > 0 && (
+        <div className="mb-2.5 flex flex-col gap-1.5 rounded-lg border border-[#E4E8EE] bg-[#F5F7F9] px-2.5 py-2">
+          {issue.source.map((s, i) => (
+            <a
+              key={i}
+              href={s.url}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="block text-[10.5px] leading-[1.4] text-[#5C6773] hover:text-[#0891B2]"
+            >
+              <span className="font-extrabold text-[#0891B2]">근거 · {s.doc}</span>
+              <br />
+              &ldquo;{truncateForDisplay(s.quote, 80)}&rdquo;
+            </a>
+          ))}
+        </div>
+      )}
+
       {structural ? (
         <div className="mb-3 text-[11.5px] font-medium text-[#9AA4B0]">
           → <b className="font-bold text-[#182430]">아래에서 단계로 나누기</b>
@@ -699,6 +719,7 @@ function MissRow({
             <span className={`rounded px-1.5 py-0.5 font-mono text-[9px] font-extrabold tracking-wide uppercase ${badgeColor}`}>
               {badgeTxt}
             </span>
+            {m.source && m.source.length > 0 && <SourceBadge source={m.source} />}
           </div>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {(m.options ?? []).map((o, oi) => (
@@ -722,6 +743,7 @@ function MissRow({
           <span className={`flex-none rounded px-1.5 py-0.5 font-mono text-[9px] font-extrabold tracking-wide uppercase ${badgeColor}`}>
             {badgeTxt}
           </span>
+          {m.source && m.source.length > 0 && <SourceBadge source={m.source} />}
           <div className="relative flex-1">
             <input
               value={m.phrase ?? ""}
@@ -750,6 +772,23 @@ function MissRow({
         </div>
       )}
     </div>
+  );
+}
+
+/** 빠진 조건 옆에 붙는 작은 근거 표시. 클릭하면 출처로, 마우스오버(title)로 인용문을 보여줌. */
+function SourceBadge({ source }: { source: SourceCitation[] }) {
+  const s = source[0];
+  return (
+    <a
+      href={s.url}
+      target="_blank"
+      rel="noreferrer"
+      title={`${s.doc} — "${s.quote}"`}
+      onClick={(e) => e.stopPropagation()}
+      className="flex-none rounded bg-[#E0F7F7] px-1.5 py-0.5 font-mono text-[9px] font-extrabold tracking-wide text-[#0891B2] hover:bg-[#A5E8E7]"
+    >
+      근거
+    </a>
   );
 }
 

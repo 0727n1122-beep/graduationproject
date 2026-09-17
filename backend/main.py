@@ -35,6 +35,7 @@ if "prompt_histories" in _inspector.get_table_names():
 from auth import router as auth_router, decode_token
 from history import router as history_router
 from error_coach import router as error_coach_router
+from rag.retrieve import retrieve_for_issue
 
 # ── FastAPI 앱 초기화 ──────────────────────────────────────
 app = FastAPI()
@@ -152,6 +153,18 @@ def find_verbatim(snippet: str, prompt: str):
     pattern = r"\s+".join(re.escape(w) for w in words)
     m = re.search(pattern, prompt)
     return m.group(0) if m else None
+
+
+def attach_source(category: str, query_text: str):
+    """카테고리에 맞는 근거 청크(rag/chunks.json)를 찾아 issues[]/missing_constraints[]에
+    붙일 수 있는 형태로 변환. 근거가 없거나 검색 실패 시 None(정직하게 인용 생략)."""
+    chunks = retrieve_for_issue(category, query_text)
+    if not chunks:
+        return None
+    return [
+        {"doc": c["doc"], "section": c["section"], "url": c["url"], "quote": c["text"]}
+        for c in chunks
+    ]
 
 # ── 비용 계산 함수 ─────────────────────────────────────────
 def calculate_costs(input_tokens: int, output_tokens: int) -> dict:
@@ -479,7 +492,8 @@ MISSING_CONSTRAINT는 issues 배열에 넣지 않는다. missing_constraints 배
         # 혹시 프롬프트 드리프트로 여기 섞여 들어와도 스키마가 다르므로 issues에 넣지 않고 버린다.
         if category == "MISSING_CONSTRAINT":
             continue
-        issues_with_guides.append({**issue, "guide": guide})
+        source = attach_source(category, f"{snippet} {issue.get('explanation', '')}")
+        issues_with_guides.append({**issue, "guide": guide, "source": source})
 
     # Step 7-1: missing_constraints 검증 + 조작 방지 가드
     missing_constraints = []
@@ -514,6 +528,7 @@ MISSING_CONSTRAINT는 issues 배열에 넣지 않는다. missing_constraints 배
             mc.setdefault("options", None)
 
         mc["confidence"] = confidence
+        mc["source"] = attach_source("MISSING_CONSTRAINT", f"{mc['field']} {mc.get('suggested_phrase') or ''}")
         missing_constraints.append(mc)
 
     # Step 8: 긍정 피드백
