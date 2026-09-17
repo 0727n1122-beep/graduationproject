@@ -16,6 +16,7 @@ import type {
   MissingConstraint,
   MissingConstraintState,
   MonoStepState,
+  SourceCitation,
   DiagnosisCardsProps,
 } from "@/types/diagnosis";
 import { CATEGORY_NAME } from "@/types/diagnosis";
@@ -464,7 +465,11 @@ function IssuePopover({
       onClick={(e) => e.stopPropagation()}
       className="absolute top-[calc(100%+8px)] left-0 z-20 w-[272px] cursor-default rounded-xl border border-[#E4E8EE] bg-white px-[15px] py-[13px] text-[12.5px] leading-[1.55] font-medium text-[#182430] shadow-[0_16px_38px_rgba(15,18,24,0.14),0_2px_8px_rgba(15,18,24,0.06)]"
     >
-      <div className="mb-2 flex items-center gap-1.5 font-mono text-[10.5px] font-extrabold tracking-wide uppercase">
+      {issue.source && issue.source.length > 0 && (
+        <SourceBadge source={issue.source} className="absolute top-[11px] right-[13px]" />
+      )}
+
+      <div className="mb-2 flex items-center gap-1.5 pr-9 font-mono text-[10.5px] font-extrabold tracking-wide uppercase">
         <span className="h-2 w-2 rounded-full" style={{ background: dotColor }} />
         {CATEGORY_NAME[issue.category]}
       </div>
@@ -604,6 +609,11 @@ function MonoPanel({
             </span>
             <span className="text-[13px] leading-[1.5] font-semibold text-[#182430]">
               <b className="font-extrabold">{s.title}</b> — {s.desc}
+              {s.verify && (
+                <span className="mt-1 block text-[11.5px] font-bold text-[#0891B2]">
+                  ✓ 확인 방법: {s.verify}
+                </span>
+              )}
             </span>
           </div>
         ))}
@@ -683,13 +693,14 @@ function MissRow({
 
   return (
     <div
-      className={`rounded-[10px] border px-3 py-2.5 transition-colors ${
+      className={`relative rounded-[10px] border px-3 py-2.5 transition-colors ${
         m.on ? "border-[#BFE7D8] bg-[#E3F6EE]" : "border-[#E4E8EE] bg-white"
       }`}
     >
+      {m.source && m.source.length > 0 && <SourceBadge source={m.source} className="absolute top-2 right-2" />}
       {m.confidence === "low" ? (
         <>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 pr-9">
             <span className="text-[12.5px] font-extrabold text-[#182430]">{m.field}</span>
             <span className={`rounded px-1.5 py-0.5 font-mono text-[9px] font-extrabold tracking-wide uppercase ${badgeColor}`}>
               {badgeTxt}
@@ -712,7 +723,7 @@ function MissRow({
           </div>
         </>
       ) : (
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 pr-9">
           <span className="flex-none text-[12.5px] font-extrabold whitespace-nowrap text-[#182430]">{m.field}</span>
           <span className={`flex-none rounded px-1.5 py-0.5 font-mono text-[9px] font-extrabold tracking-wide uppercase ${badgeColor}`}>
             {badgeTxt}
@@ -744,6 +755,33 @@ function MissRow({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+/** 블록 우측 상단에 붙는 "근거" 버튼. 마우스를 올리면 인용문 목록이 툴팁으로 뜨고,
+ *  각 인용을 클릭하면 출처로 이동한다. 버튼 자체는 위치 지정을 위해 className을 받는다. */
+function SourceBadge({ source, className = "" }: { source: SourceCitation[]; className?: string }) {
+  return (
+    <div className={`group z-10 ${className}`} onClick={(e) => e.stopPropagation()}>
+      <span className="cursor-default rounded bg-[#E0F7F7] px-1.5 py-0.5 font-mono text-[9px] font-extrabold tracking-wide text-[#0891B2] group-hover:bg-[#A5E8E7]">
+        근거
+      </span>
+      <div className="invisible absolute top-full right-0 z-30 mt-1 flex w-[220px] flex-col gap-1.5 rounded-lg border border-[#E4E8EE] bg-white px-2.5 py-2 opacity-0 shadow-[0_12px_30px_rgba(15,18,24,0.14)] transition-opacity group-hover:visible group-hover:opacity-100">
+        {source.map((s, i) => (
+          <a
+            key={i}
+            href={s.url}
+            target="_blank"
+            rel="noreferrer"
+            className="block text-left text-[10.5px] leading-[1.4] text-[#5C6773] hover:text-[#0891B2]"
+          >
+            <span className="font-extrabold text-[#0891B2]">{s.doc}</span>
+            <br />
+            &ldquo;{truncateForDisplay(s.quote, 90)}&rdquo;
+          </a>
+        ))}
+      </div>
     </div>
   );
 }
