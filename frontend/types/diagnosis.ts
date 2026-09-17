@@ -42,6 +42,8 @@ export const CATEGORY_NAME: Record<IssueCategory, string> = {
 export interface MonoStep {
   title: string;
   desc: string;
+  /** 이 단계가 끝났다는 걸 확인하는 방법. verify 필드 추가 이전에 저장된 히스토리 기록엔 없을 수 있음 */
+  verify?: string;
 }
 
 /** 카테고리별 가이드 (백엔드가 issue에 얹어 보냄). 현재 팝오버 UI에서는 미사용. */

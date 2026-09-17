@@ -604,6 +604,11 @@ function MonoPanel({
             </span>
             <span className="text-[13px] leading-[1.5] font-semibold text-[#182430]">
               <b className="font-extrabold">{s.title}</b> — {s.desc}
+              {s.verify && (
+                <span className="mt-1 block text-[11.5px] font-bold text-[#0891B2]">
+                  ✓ 확인 방법: {s.verify}
+                </span>
+              )}
             </span>
           </div>
         ))}
