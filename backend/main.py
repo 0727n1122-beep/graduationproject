@@ -269,7 +269,7 @@ async def optimize(
       "confidence": "high | rec | low — 4장 기준 준수",
       "suggested_value": "짧은 값 (예: 'Python 3.12'). confidence가 low면 반드시 null",
       "suggested_phrase": "프롬프트에 그대로 삽입될 완성 문장 (예: 'Python 3.12로 작성해주세요.'). confidence가 low면 반드시 null",
-      "options": "confidence가 low일 때만: [{{\"label\": \"선택지 이름\", \"phrase\": \"프롬프트에 삽입될 문장 또는 null\"}}, ...] 2~4개. high/rec는 null"
+      "options": "confidence가 low일 때만: [{{\"label\": \"선택지 이름\", \"phrase\": \"프롬프트에 삽입될 문장 또는 null\", \"description\": \"장단점 설명(장점 1개+단점 1개, 1~2문장) 또는 빈 문자열\"}}, ...] 2~4개. high/rec는 null"
     }}
   ]
 }}
@@ -363,6 +363,14 @@ MISSING_CONSTRAINT는 issues 배열에 넣지 않는다. missing_constraints 배
   high/rec는 suggested_value(짧은 값)와 suggested_phrase(완성 문장)를 반드시 채운다.
   low는 suggested_value/suggested_phrase를 절대 채우지 말고(null), options로 2~4개
   선택지를 제시한다. 확신 없는 값을 확정값처럼 제시하는 것은 "없는 조건 조작"이다.
+
+  [options 옵션별 장단점 설명 규칙]
+  - field가 기술 스택/플랫폼/언어 선택에 해당하면(프레임워크, 프로그래밍 언어,
+    데이터베이스, 모바일 개발 방식 등) options[] 각 항목에 description을 반드시 채운다.
+  - description은 1~2문장, 비개발자가 이해할 수 있는 평이한 표현으로 작성한다.
+    전문 용어는 괄호로 짧게 풀어준다. (예: "네이티브(각 OS 전용 코드로 따로 개발)")
+  - 장점 하나 + 단점 하나를 반드시 포함한다. 한쪽만 있는 설명은 금지한다.
+  - field가 순수 취향(색상, 스타일 등)이라 장단점이 무의미하면 description은 비워도 된다.
 
 - AMBIGUOUS (모호한 지시어 또는 위임형)
   지시어: "이거", "그거", "다", "전부" / 위임형: "알아서", "적당히", "잘 해줘"
