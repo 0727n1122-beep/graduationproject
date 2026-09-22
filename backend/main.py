@@ -35,6 +35,7 @@ if "prompt_histories" in _inspector.get_table_names():
 from auth import router as auth_router, decode_token
 from history import router as history_router
 from error_coach import router as error_coach_router
+from rag.retrieve import retrieve_for_issue
 
 # ── FastAPI 앱 초기화 ──────────────────────────────────────
 app = FastAPI()
@@ -153,6 +154,18 @@ def find_verbatim(snippet: str, prompt: str):
     m = re.search(pattern, prompt)
     return m.group(0) if m else None
 
+
+def attach_source(category: str, query_text: str):
+    """카테고리에 맞는 근거 청크(rag/chunks.json)를 찾아 issues[]/missing_constraints[]에
+    붙일 수 있는 형태로 변환. 근거가 없거나 검색 실패 시 None(정직하게 인용 생략)."""
+    chunks = retrieve_for_issue(category, query_text)
+    if not chunks:
+        return None
+    return [
+        {"doc": c["doc"], "section": c["section"], "url": c["url"], "quote": c["text"]}
+        for c in chunks
+    ]
+
 # ── 비용 계산 함수 ─────────────────────────────────────────
 def calculate_costs(input_tokens: int, output_tokens: int) -> dict:
     costs = {}
@@ -246,7 +259,7 @@ async def optimize(
       "explanation": "왜 토큰, 비용 낭비로 이어지는지 간결하게(1-2문장)",
       "replacement": "적용 시 그 자리에 들어갈 텍스트. 삭제면 빈 문자열 \"\". CODE_DUMP는 진단 문구 뒤에 원본 코드를 verbatim으로 이어붙인 것(코드 삭제·요약 금지, 아래 카테고리 정의 참고), UNSTRUCTURED는 번호 리스트로 재구성한 문장. scope가 structural(MONOLITHIC_REQUEST)이면 null",
       "occurrence": "원본 프롬프트 내에서 이 snippet이 몇 번째로 등장하는지 (0부터 시작). 같은 snippet이 여러 번 나오면 등장 순서대로 0, 1, 2...를 각각 부여",
-      "steps": "MONOLITHIC_REQUEST일 때만: [{{\"title\": \"단계명(짧게)\", \"desc\": \"1문장 설명\"}}, ...] 3~6개. 다른 카테고리는 null"
+      "steps": "MONOLITHIC_REQUEST일 때만: [{{\"title\": \"단계명(짧게)\", \"desc\": \"1문장 설명\", \"verify\": \"이 단계가 끝났다는 걸 확인하는 구체적 방법 1문장\"}}, ...] 3~6개. 다른 카테고리는 null"
     }}
   ],
   "missing_constraints": [
@@ -325,7 +338,10 @@ MISSING_CONSTRAINT는 issues 배열에 넣지 않는다. missing_constraints 배
   [steps 생성 규칙] 발동 시 반드시 steps 배열을 채운다(3~6개).
   - title: 짧은 단계명. 최종 프롬프트 문구 조립에 쓰이는 재료이므로 명사구로.
   - desc: 1문장 설명. 계획 미리보기에만 쓰이고 최종 문구에는 안 들어감.
-  - 순서는 일반적 개발 흐름(데이터·구조 → 핵심 기능 → 부가 기능 → 스타일)을 따르되 도메인에 맞게 구성.
+  - verify: 이 단계가 "끝났다"를 무엇으로 확인할지 구체적 방법 1문장(예: "테스트 계정으로
+    로그인 성공/실패 메시지가 뜨는지 확인"). desc와 마찬가지로 미리보기 전용이며 최종
+    문구에는 안 들어감. 완료 기준이 없으면 사용자가 결과를 못 미더워 다시 물어보게 되고,
+    그게 곧 이 카테고리가 막으려는 "재작업"이므로 반드시 채운다.
 
 ★ UNSTRUCTURED (흩어진 요구사항)
   여러 요구가 줄글로 섞여 LLM이 우선순위·관계를 추론해야 함.
@@ -476,7 +492,8 @@ MISSING_CONSTRAINT는 issues 배열에 넣지 않는다. missing_constraints 배
         # 혹시 프롬프트 드리프트로 여기 섞여 들어와도 스키마가 다르므로 issues에 넣지 않고 버린다.
         if category == "MISSING_CONSTRAINT":
             continue
-        issues_with_guides.append({**issue, "guide": guide})
+        source = attach_source(category, f"{snippet} {issue.get('explanation', '')}")
+        issues_with_guides.append({**issue, "guide": guide, "source": source})
 
     # Step 7-1: missing_constraints 검증 + 조작 방지 가드
     missing_constraints = []
@@ -511,6 +528,7 @@ MISSING_CONSTRAINT는 issues 배열에 넣지 않는다. missing_constraints 배
             mc.setdefault("options", None)
 
         mc["confidence"] = confidence
+        mc["source"] = attach_source("MISSING_CONSTRAINT", f"{mc['field']} {mc.get('suggested_phrase') or ''}")
         missing_constraints.append(mc)
 
     # Step 8: 긍정 피드백

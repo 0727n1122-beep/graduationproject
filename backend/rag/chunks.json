@@ -1,0 +1,51 @@
+[
+  {
+    "id": "cc-context",
+    "doc": "Anthropic — Best practices for Claude Code",
+    "section": "Provide specific context in your prompts",
+    "url": "https://code.claude.com/docs/en/best-practices",
+    "categories": ["AMBIGUOUS", "MISSING_CONSTRAINT"],
+    "text": "Claude can infer intent, but it can't read your mind. Reference specific files, mention constraints, and point to example patterns. Scope the task: instead of \"add tests for foo.py\", write \"write a test for foo.py covering the edge case where the user is logged out. avoid mocks.\" Point to sources: instead of \"why does ExecutionFactory have such a weird api?\", write \"look through ExecutionFactory's git history and summarize how its api came to be.\" Reference existing patterns: instead of \"add a calendar widget\", write \"look at how existing widgets are implemented on the home page to understand the patterns... follow the pattern to implement a new calendar widget.\" Describe the symptom: instead of \"fix the login bug\", write \"users report that login fails after session timeout. check the auth flow in src/auth/, especially token refresh. write a failing test that reproduces the issue, then fix it.\""
+  },
+  {
+    "id": "cc-verify",
+    "doc": "Anthropic — Best practices for Claude Code",
+    "section": "Give Claude a way to verify its work",
+    "url": "https://code.claude.com/docs/en/best-practices",
+    "categories": ["MISSING_CONSTRAINT", "MONOLITHIC_REQUEST"],
+    "text": "Claude stops when the work looks done. Without a check it can run, \"looks done\" is the only signal available, and you become the verification loop: every mistake waits for you to notice it. Give Claude something that produces a pass or fail, and the loop closes on its own. Provide verification criteria: instead of \"implement a function that validates email addresses\", write \"write a validateEmail function. example test cases: user@example.com is true, invalid is false, user@.com is false. run the tests after implementing.\""
+  },
+  {
+    "id": "anthropic-clear",
+    "doc": "Anthropic — Prompting best practices",
+    "section": "Be clear and direct",
+    "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices",
+    "categories": ["AMBIGUOUS", "MISSING_CONSTRAINT"],
+    "text": "Claude responds well to clear, explicit instructions. Being specific about your desired output can help enhance results. Think of Claude as a brilliant but new employee who lacks context on your norms and workflows — the more precisely you explain what you want, the better the result. Golden rule: show your prompt to a colleague with minimal context on the task and ask them to follow it. If they'd be confused, Claude will be too. Be specific about the desired output format and constraints. Provide instructions as sequential steps using numbered lists or bullet points when the order or completeness of steps matters."
+  },
+  {
+    "id": "anthropic-xml",
+    "doc": "Anthropic — Prompting best practices",
+    "section": "Structure prompts with XML tags",
+    "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices",
+    "categories": ["UNSTRUCTURED"],
+    "text": "XML tags help Claude parse complex prompts unambiguously, especially when your prompt mixes instructions, context, examples, and variable inputs. Wrapping each type of content in its own tag reduces misinterpretation. Use consistent, descriptive tag names across your prompts, and nest tags when content has a natural hierarchy."
+  },
+  {
+    "id": "mre",
+    "doc": "Stack Overflow Help Center — How to Create a Minimal, Reproducible Example",
+    "section": "Minimal Reproducible Example",
+    "url": "https://stackoverflow.com/help/minimal-reproducible-example",
+    "categories": ["CODE_DUMP"],
+    "note": "직접 인용이 아니라 개념 요약(원문 fetch가 차단되어 있어 공식 정의를 우리 말로 정리함)",
+    "text": "A minimal reproducible example is source code that is as small and simple as possible while still being sufficient to demonstrate a bug or problem — with unnecessary complexity and unrelated dependencies removed. Stack Overflow's Help Center officially recommends this practice: when asking for help with code, provide only the smallest amount of code needed to reproduce the issue, not the entire file or project, so that others can understand and diagnose the problem quickly."
+  },
+  {
+    "id": "invest-small",
+    "doc": "Bill Wake — INVEST in Good Stories, and SMART Tasks (2003)",
+    "section": "Small / Independent / Testable",
+    "url": "https://xp123.com/invest-in-good-stories-and-smart-tasks/",
+    "categories": ["MONOLITHIC_REQUEST"],
+    "text": "Good stories tend to be small. Stories typically represent at most a few person-weeks worth of work. Above this size, it seems to be too hard to know what's in the story's scope. Stories are easiest to work with if they are independent — we'd like them to not overlap in concept, and we'd like to be able to schedule and implement them in any order. A good story is testable: writing a story card carries an implicit promise — \"I understand what I want well enough that I could write a test for it.\""
+  }
+]

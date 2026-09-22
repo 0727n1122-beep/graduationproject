@@ -42,6 +42,8 @@ export const CATEGORY_NAME: Record<IssueCategory, string> = {
 export interface MonoStep {
   title: string;
   desc: string;
+  /** 이 단계가 끝났다는 걸 확인하는 방법. verify 필드 추가 이전에 저장된 히스토리 기록엔 없을 수 있음 */
+  verify?: string;
 }
 
 /** 카테고리별 가이드 (백엔드가 issue에 얹어 보냄). 현재 팝오버 UI에서는 미사용. */
@@ -50,6 +52,15 @@ export interface IssueGuide {
   tip: string;
   example_bad: string;
   example_good: string;
+}
+
+/** RAG 검색으로 찾은 근거 청크 (rag/chunks.json 출처). 근거가 없는 카테고리(FILLER/REDUNDANT
+ *  등)나 검색 실패 시에는 없음(undefined/null) — 근거 없이 인용을 지어내지 않는다. */
+export interface SourceCitation {
+  doc: string;
+  section: string;
+  url: string;
+  quote: string;
 }
 
 /** 백엔드가 내려주는 이슈 원본 (issues[] 원소) */
@@ -68,6 +79,7 @@ export interface Issue {
   /** scope:"structural"(MONOLITHIC_REQUEST)만 존재 */
   steps: MonoStep[] | null;
   guide?: IssueGuide;
+  source?: SourceCitation[] | null;
 }
 
 // ─────────────────────────────────────────
@@ -123,6 +135,7 @@ export interface MissingConstraint {
   suggested_value: string | null;
   suggested_phrase: string | null;
   options: MissingOption[] | null;
+  source?: SourceCitation[] | null;
 }
 
 /** 화면에서 다루는 누락 조건 (원본 + 상태) */
