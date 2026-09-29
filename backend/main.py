@@ -35,7 +35,7 @@ if "prompt_histories" in _inspector.get_table_names():
 from auth import router as auth_router, decode_token
 from history import router as history_router
 from error_coach import router as error_coach_router
-from rag.retrieve import retrieve_for_issue
+from rag.retrieve import retrieve_batch
 
 # ── FastAPI 앱 초기화 ──────────────────────────────────────
 app = FastAPI()
@@ -155,10 +155,9 @@ def find_verbatim(snippet: str, prompt: str):
     return m.group(0) if m else None
 
 
-def attach_source(category: str, query_text: str):
-    """카테고리에 맞는 근거 청크(rag/chunks.json)를 찾아 issues[]/missing_constraints[]에
-    붙일 수 있는 형태로 변환. 근거가 없거나 검색 실패 시 None(정직하게 인용 생략)."""
-    chunks = retrieve_for_issue(category, query_text)
+def format_source(chunks: list[dict]):
+    """근거 청크(rag/chunks.json)를 issues[]/missing_constraints[]에 붙일 수 있는 형태로 변환.
+    근거가 없으면 None(정직하게 인용 생략)."""
     if not chunks:
         return None
     return [
@@ -437,6 +436,7 @@ MISSING_CONSTRAINT는 issues 배열에 넣지 않는다. missing_constraints 배
     seen_snippets = {}  # occurrence 자동 계산용 (0-based)
     seen_ids = set()
     fallback_id_counter = 0
+    rag_queries = []  # (category, query_text) — issue/missing_constraint 순서대로 모아뒀다가 Step 7-2에서 한 번에 검색
 
     for issue in result.get("issues", []):
         # snippet 원본 검증: 실제로 원본 프롬프트에 없으면 드롭 (환각 방지)
@@ -500,8 +500,8 @@ MISSING_CONSTRAINT는 issues 배열에 넣지 않는다. missing_constraints 배
         # 혹시 프롬프트 드리프트로 여기 섞여 들어와도 스키마가 다르므로 issues에 넣지 않고 버린다.
         if category == "MISSING_CONSTRAINT":
             continue
-        source = attach_source(category, f"{snippet} {issue.get('explanation', '')}")
-        issues_with_guides.append({**issue, "guide": guide, "source": source})
+        rag_queries.append((category, f"{snippet} {issue.get('explanation', '')}"))
+        issues_with_guides.append({**issue, "guide": guide})  # source는 Step 7-2에서 일괄로 채움
 
     # Step 7-1: missing_constraints 검증 + 조작 방지 가드
     missing_constraints = []
@@ -536,8 +536,16 @@ MISSING_CONSTRAINT는 issues 배열에 넣지 않는다. missing_constraints 배
             mc.setdefault("options", None)
 
         mc["confidence"] = confidence
-        mc["source"] = attach_source("MISSING_CONSTRAINT", f"{mc['field']} {mc.get('suggested_phrase') or ''}")
+        rag_queries.append(("MISSING_CONSTRAINT", f"{mc['field']} {mc.get('suggested_phrase') or ''}"))
         missing_constraints.append(mc)
+
+    # Step 7-2: 근거 인용 일괄 검색 — issue/missing_constraint마다 따로 호출하면 Voyage
+    # 무료 티어 rate limit에 걸려 일부만(또는 전부) 순위 없는 폴백으로 빠지기 쉬우므로,
+    # 이번 요청에서 근거가 필요한 모든 항목을 모아 임베딩 API를 한 번만 호출한다.
+    if rag_queries:
+        rag_results = retrieve_batch(rag_queries)
+        for item, chunks in zip(issues_with_guides + missing_constraints, rag_results):
+            item["source"] = format_source(chunks)
 
     # Step 8: 긍정 피드백
     feedback = None
