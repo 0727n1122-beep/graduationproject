@@ -1,0 +1,2 @@
+# backend/requirements.txt에 이미 있는 anthropic/requests/python-dotenv 위에 추가로 필요한 것만.
+playwright==1.55.0
