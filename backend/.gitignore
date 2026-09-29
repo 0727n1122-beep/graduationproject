@@ -1,3 +1,6 @@
 venv/
 .env
 __pycache__/
+
+# 평가 파일럿이 만드는 생성물 (HTML 결과물, summary.json) — 재현 가능한 산출물이라 git에는 안 넣음
+eval/results/
