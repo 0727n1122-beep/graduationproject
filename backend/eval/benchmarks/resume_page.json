@@ -1,0 +1,56 @@
+{
+  "id": "resume_page",
+  "name": "이력서/포트폴리오 페이지",
+  "original_prompt": "저 이력서 페이지 하나만 대충 만들고 싶은데 이쁘게 해주세요 연락처란에 이메일이랑 전화번호 들어가게 해주세요 개인 프로젝트나 경력도 몇 개 들어가면 좋겠어요",
+  "checklist": [
+    {
+      "id": "c1_heading",
+      "description": "페이지에 이름/직무 등을 담는 제목(h1 또는 h2)이 있다",
+      "type": "element_count_min",
+      "selector": "h1, h2",
+      "min": 1
+    },
+    {
+      "id": "c2_contact",
+      "description": "연락처(이메일 링크 또는 전화번호 패턴)가 하나 있다",
+      "type": "any_of",
+      "checks": [
+        {
+          "type": "element_exists",
+          "selector": "a[href^='mailto:']"
+        },
+        {
+          "type": "text_regex",
+          "pattern": "\\d{2,3}-\\d{3,4}-\\d{4}"
+        },
+        {
+          "type": "text_regex",
+          "pattern": "[\\w.+-]+@[\\w-]+\\.[\\w.-]+"
+        }
+      ]
+    },
+    {
+      "id": "c3_about",
+      "description": "자기소개/소개 등을 담은 문구가 본문에 있다",
+      "type": "text_contains_any",
+      "texts": [
+        "소개",
+        "About",
+        "자기소개"
+      ]
+    },
+    {
+      "id": "c4_list_items",
+      "description": "개인 프로젝트/경력 또는 목록 항목(li)이 최소 2개 이상 있다",
+      "type": "element_count_min",
+      "selector": "li",
+      "min": 2
+    },
+    {
+      "id": "c5_viewport",
+      "description": "모바일 대응을 위한 viewport meta 태그가 있다",
+      "type": "element_exists",
+      "selector": "meta[name='viewport']"
+    }
+  ]
+}
