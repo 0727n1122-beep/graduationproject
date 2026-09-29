@@ -1,0 +1,6 @@
+# psycopg2-binary는 libpq를 내부에 정적으로 포함하고 있어서 시스템 postgresql 헤더가 필요 없음.
+# 그런데 Nixpacks가 requirements.txt에서 "psycopg2" 문자열만 보고 postgresql_16.dev를
+# setup 단계에 자동으로 추가하는데, 이 nix 패키지 설치가 빌드 서버에서 실패함(exit code 1).
+# 그래서 setup 단계 패키지 목록을 명시적으로 지정해서 postgresql_16.dev를 빼줌.
+[phases.setup]
+nixPkgs = ["python39", "gcc"]
