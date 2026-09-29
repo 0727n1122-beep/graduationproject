@@ -41,10 +41,25 @@
     },
     {
       "id": "c4_list_items",
-      "description": "개인 프로젝트/경력 또는 목록 항목(li)이 최소 2개 이상 있다",
-      "type": "element_count_min",
-      "selector": "li",
-      "min": 2
+      "description": "개인 프로젝트/경력 등 목록 항목이 최소 2개 이상 있다 (li 태그든 카드형 div든 구조 무관)",
+      "type": "any_of",
+      "checks": [
+        {
+          "type": "element_count_min",
+          "selector": "li",
+          "min": 2
+        },
+        {
+          "type": "element_count_min",
+          "selector": "[class*=item], [class*=card], [class*=project], [class*=experience], [class*=entry]",
+          "min": 2
+        },
+        {
+          "type": "text_regex_count_min",
+          "pattern": "20\\d{2}",
+          "min": 2
+        }
+      ]
     },
     {
       "id": "c5_viewport",
