@@ -1,0 +1,52 @@
+{
+  "id": "chatbot_ui",
+  "name": "챗봇 UI",
+  "original_prompt": "챗봇처럼 메시지 주고받는 화면 하나 만들어주세요 왼쪽엔 상대방 말풍선 오른쪽엔 내 말풍선 이렇게 대화하는 것처럼 보이면 좋겠고 밑에 뭐 입력할 수 있는 칸이랑 보내는 버튼도 있어야 돼요",
+  "checklist": [
+    {
+      "id": "c1_input",
+      "description": "메시지를 입력할 텍스트 입력창이 있다",
+      "type": "element_exists",
+      "selector": "input[type='text'], input:not([type]), textarea"
+    },
+    {
+      "id": "c2_send",
+      "description": "전송(보내기) 버튼이 있다 (아이콘 전용 버튼도 허용)",
+      "type": "any_of",
+      "checks": [
+        { "type": "element_exists", "selector": "button" },
+        { "type": "text_contains_any", "texts": ["전송", "보내기", "Send", "➤", "→", "▶"] }
+      ]
+    },
+    {
+      "id": "c3_message_area",
+      "description": "대화 내용을 보여주는 메시지 영역(목록 또는 컨테이너)이 있다",
+      "type": "any_of",
+      "checks": [
+        { "type": "element_count_min", "selector": "li", "min": 1 },
+        { "type": "element_count_min", "selector": "[class*=message], [class*=chat], [class*=bubble]", "min": 1 }
+      ]
+    },
+    {
+      "id": "c4_two_sides",
+      "description": "상대방/내 메시지를 구분하는 표시(클래스 구분 또는 좌우 정렬)가 있다",
+      "type": "any_of",
+      "checks": [
+        { "type": "element_count_min", "selector": "[class*=user], [class*=bot], [class*=me], [class*=other]", "min": 2 },
+        { "type": "element_exists", "selector": "[style*='flex-end'], [style*='flex-start']" }
+      ]
+    },
+    {
+      "id": "c5_placeholder",
+      "description": "입력창에 무엇을 입력하라는 안내(placeholder)가 있다",
+      "type": "element_exists",
+      "selector": "input[placeholder], textarea[placeholder]"
+    },
+    {
+      "id": "c6_viewport",
+      "description": "모바일 대응을 위한 viewport meta 태그가 있다",
+      "type": "element_exists",
+      "selector": "meta[name='viewport']"
+    }
+  ]
+}
