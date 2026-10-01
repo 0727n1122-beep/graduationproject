@@ -159,6 +159,9 @@ def main():
         else sorted(Path(p) for p in glob.glob(str(Path(__file__).parent / "benchmarks" / "*.json")))
     )
     client = build_anthropic_client()
+    # 이번에 안 돌리는 스펙의 기존 결과는 summary.json에 그대로 남김 (일부 스펙만 다시 돌릴 때)
+    summary_path = OUT_DIR / "summary.json"
+    merged = {s["id"]: s for s in json.loads(summary_path.read_text(encoding="utf-8"))} if summary_path.exists() else {}
     results = []
     with sync_playwright() as pw:
         browser = pw.chromium.launch()
@@ -180,7 +183,8 @@ def main():
                           f"({path})  대화 토큰 {conv['conversation_tokens']}")
                 runs.append(run)
             results.append({"id": spec["id"], "name": spec["name"], "runs": runs, "aggregate": aggregate(runs, args.max_turns)})
-            (OUT_DIR / "summary.json").write_text(json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")
+            merged[spec["id"]] = results[-1]
+            summary_path.write_text(json.dumps(list(merged.values()), ensure_ascii=False, indent=2), encoding="utf-8")
         browser.close()
 
     print(f"\n\n=== 요약 (조건별 {args.runs}회, 최대 {args.max_turns}턴) ===")
@@ -189,7 +193,7 @@ def main():
         for cond, a in res["aggregate"].items():
             print(f"  {cond:10s} 평균 재질문 {a['mean_followups']:.1f}회  완성 {a['solved']}/{a['runs']}  "
                   f"첫 턴 충족률 {a['mean_first_turn_pass_rate']*100:.0f}%  평균 대화 토큰 {a['mean_conversation_tokens']:.0f}")
-    print(f"\n전체 결과: {OUT_DIR / 'summary.json'}")
+    print(f"\n전체 결과: {summary_path}")
 
 
 if __name__ == "__main__":

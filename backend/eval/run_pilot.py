@@ -35,6 +35,7 @@ import os
 import re
 import statistics
 import sys
+import time
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -80,13 +81,18 @@ def extract_html(text: str) -> str:
     return m.group(1).strip() if m else text.strip()
 
 
-def call_optimize(prompt: str) -> str:
-    resp = requests.post(f"{API_URL}/optimize", json={"prompt": prompt}, timeout=60)
-    resp.raise_for_status()
-    data = resp.json()
-    if "optimized_prompt" not in data:
-        raise RuntimeError(f"/optimize 응답에 optimized_prompt가 없음: {data}")
-    return data["optimized_prompt"]
+def call_optimize(prompt: str, attempts: int = 3) -> str:
+    # /optimize는 모델 응답 JSON 파싱 실패 등으로 가끔 {"error": ...}를 돌려줌 — 실제 사용자도
+    # "다시 시도"를 누르는 상황이라 몇 번 재시도하고, 그래도 안 되면 실행을 멈춤
+    for i in range(attempts):
+        resp = requests.post(f"{API_URL}/optimize", json={"prompt": prompt}, timeout=90)
+        resp.raise_for_status()
+        data = resp.json()
+        if "optimized_prompt" in data:
+            return data["optimized_prompt"]
+        print(f"  /optimize 실패({i + 1}/{attempts}): {data.get('error')}")
+        time.sleep(2)
+    raise RuntimeError(f"/optimize가 {attempts}번 연속 실패: {data}")
 
 
 def generate_html(client: anthropic.Anthropic, prompt: str) -> tuple[str, dict]:
