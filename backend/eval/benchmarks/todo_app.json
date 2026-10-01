@@ -6,6 +6,7 @@
     {
       "id": "c1_add",
       "description": "[명시] 할 일을 적고 추가 버튼을 누르면 목록에 나타난다",
+      "complaint": "할 일을 적고 추가를 눌러도 목록에 안 생겨요",
       "actions": [
         {
           "type": "fill",
@@ -32,6 +33,7 @@
     {
       "id": "c2_strike",
       "description": "[명시] 체크하면 실제로 취소선이 그어진다",
+      "complaint": "체크해도 줄이 안 그어져요",
       "actions": [
         {
           "type": "fill",
@@ -66,6 +68,7 @@
     {
       "id": "c3_delete",
       "description": "[명시] 삭제 버튼을 누르면 그 항목이 사라진다",
+      "complaint": "삭제를 눌러도 안 지워져요",
       "actions": [
         {
           "type": "fill",
@@ -112,6 +115,7 @@
     {
       "id": "c4_enter",
       "description": "[암묵] 버튼 대신 Enter 키로도 추가된다",
+      "complaint": "엔터를 쳐도 추가가 안 돼서 매번 버튼을 눌러야 해요",
       "actions": [
         {
           "type": "fill",
@@ -132,6 +136,7 @@
     {
       "id": "c5_blank_rejected",
       "description": "[암묵] 빈 칸(공백만)으로 추가하면 빈 항목이 생기지 않는다",
+      "complaint": "아무것도 안 쓰고 추가를 누르면 빈 할 일이 생겨요",
       "actions": [
         {
           "type": "js",
@@ -160,6 +165,7 @@
     {
       "id": "c6_persist",
       "description": "[암묵] 새로고침해도 할 일이 남아 있다",
+      "complaint": "새로고침하니까 적어둔 게 다 사라졌어요",
       "actions": [
         {
           "type": "fill",
@@ -193,6 +199,7 @@
     {
       "id": "c7_mobile_fit",
       "description": "[암묵] 휴대폰 폭(375px)에서 가로로 넘치지 않는다 (좌우 스크롤 없음)",
+      "complaint": "폰으로 보면 화면이 옆으로 삐져나가서 좌우로 밀려요",
       "actions": [
         {
           "type": "set_viewport",

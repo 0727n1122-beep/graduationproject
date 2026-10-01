@@ -6,6 +6,7 @@
     {
       "id": "c1_plans",
       "description": "[명시] 요금제가 2개 이상 구분돼 있다",
+      "complaint": "요금제가 나뉘어서 안 보여요",
       "type": "any_of",
       "checks": [
         {
@@ -23,18 +24,21 @@
     {
       "id": "c2_free",
       "description": "[명시] 무료 요금제가 표시된다",
+      "complaint": "무료 요금제가 없어요",
       "type": "text_regex",
       "pattern": "무료|Free|FREE|(^|[^\\d,])0\\s*원|₩\\s*0(?![\\d,])|\\$\\s*0(?![\\d.,])"
     },
     {
       "id": "c3_paid_price",
       "description": "[명시] 유료 요금제의 가격(0이 아닌 금액)이 표시된다",
+      "complaint": "유료 요금제 가격이 안 나와요",
       "type": "text_regex",
       "pattern": "[1-9][\\d,]*\\s*원|₩\\s*[1-9]|\\$\\s*[1-9]"
     },
     {
       "id": "c4_included_mark",
       "description": "[명시] 되는 기능 표시가 있다",
+      "complaint": "어떤 기능이 되는지 표시가 없어요",
       "type": "any_of",
       "checks": [
         {
@@ -58,6 +62,7 @@
     {
       "id": "c5_excluded_mark",
       "description": "[명시] 안 되는 기능 표시가 있다",
+      "complaint": "어떤 기능이 안 되는지 표시가 없어요",
       "type": "any_of",
       "checks": [
         {
@@ -84,6 +89,7 @@
     {
       "id": "c6_cta",
       "description": "[암묵] 요금제마다 선택/가입 버튼이 있다 (2개 이상)",
+      "complaint": "요금제를 고르는 버튼이 없어요",
       "type": "element_count_min",
       "selector": "button, a[class*=btn], a[class*=button]",
       "min": 2
@@ -91,6 +97,7 @@
     {
       "id": "c7_recommended",
       "description": "[암묵] 추천/인기 요금제가 강조돼 있다 (배지 글자 또는 강조용 스타일)",
+      "complaint": "어떤 요금제가 추천인지 눈에 안 띄어요",
       "type": "any_of",
       "checks": [
         {
@@ -114,6 +121,7 @@
     {
       "id": "c8_mobile_fit",
       "description": "[암묵] 휴대폰 폭(375px)에서 가로로 넘치지 않는다 (좌우 스크롤 없음)",
+      "complaint": "폰으로 보면 화면이 옆으로 삐져나가서 좌우로 밀려요",
       "actions": [
         {
           "type": "set_viewport",

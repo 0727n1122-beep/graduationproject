@@ -6,6 +6,7 @@
     {
       "id": "c1_heading",
       "description": "[명시] 이름/직무 등을 담는 제목(h1 또는 h2)이 있다",
+      "complaint": "맨 위에 제 이름이 크게 안 보여요",
       "type": "element_count_min",
       "selector": "h1, h2",
       "min": 1
@@ -13,18 +14,21 @@
     {
       "id": "c2_email",
       "description": "[명시] 이메일 주소가 보인다",
+      "complaint": "이메일 주소가 안 보여요",
       "type": "text_regex",
       "pattern": "[\\w.+-]+@[\\w-]+\\.[\\w.-]+"
     },
     {
       "id": "c3_phone",
       "description": "[명시] 전화번호가 보인다",
+      "complaint": "전화번호가 안 보여요",
       "type": "text_regex",
       "pattern": "0\\d{1,2}[-.\\s]?\\d{3,4}[-.\\s]?\\d{4}"
     },
     {
       "id": "c4_projects",
       "description": "[명시] 프로젝트/경력 항목이 2개 이상 있다 (태그 구조 무관)",
+      "complaint": "프로젝트나 경력이 거의 안 들어가 있어요",
       "type": "any_of",
       "checks": [
         {
@@ -47,18 +51,21 @@
     {
       "id": "c5_mailto",
       "description": "[암묵] 이메일을 누르면 메일 앱이 열린다 (mailto 링크)",
+      "complaint": "이메일을 눌러도 메일 쓰는 화면이 안 열려요",
       "type": "element_exists",
       "selector": "a[href^='mailto:']"
     },
     {
       "id": "c6_tel",
       "description": "[암묵] 휴대폰에서 전화번호를 누르면 전화가 걸린다 (tel 링크)",
+      "complaint": "폰에서 전화번호를 눌러도 전화가 안 걸려요",
       "type": "element_exists",
       "selector": "a[href^='tel:']"
     },
     {
       "id": "c7_mobile_fit",
       "description": "[암묵] 휴대폰 폭(375px)에서 가로로 넘치지 않는다 (좌우 스크롤 없음)",
+      "complaint": "폰으로 보면 화면이 옆으로 삐져나가서 좌우로 밀려요",
       "actions": [
         {
           "type": "set_viewport",
@@ -72,6 +79,7 @@
     {
       "id": "c8_viewport",
       "description": "[암묵] 휴대폰용 viewport meta 태그가 있다",
+      "complaint": "폰으로 보면 글씨가 엄청 작게 축소돼서 보여요",
       "type": "element_exists",
       "selector": "meta[name='viewport']"
     }
