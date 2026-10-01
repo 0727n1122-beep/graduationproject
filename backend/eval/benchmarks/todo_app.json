@@ -46,12 +46,11 @@
     },
     {
       "id": "c6_strike_style",
-      "description": "체크박스를 누르면(setup_actions) 완료 표시(취소선 스타일 또는 완료 클래스)가 적용된다",
-      "type": "any_of",
-      "checks": [
-        { "type": "element_exists", "selector": "[style*='line-through']" },
-        { "type": "element_count_min", "selector": "[class*=complete], [class*=done], [class*=checked], [class*=finished]", "min": 1 }
-      ]
+      "description": "체크박스를 누르면(setup_actions) 실제로 취소선이 그어진다 (클래스/인라인/CSS 선택자 등 구현 방식 무관)",
+      "type": "computed_style_any",
+      "selector": "body *",
+      "property": "text-decoration-line",
+      "value": "line-through"
     },
     {
       "id": "c7_viewport",

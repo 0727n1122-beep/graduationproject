@@ -21,11 +21,22 @@ playwright install chromium
 
 ```bash
 cd backend/eval
-python run_pilot.py                              # benchmarks/ 안 전부
-python run_pilot.py benchmarks/resume_page.json   # 하나만
+python run_pilot.py                                       # benchmarks/ 안 전부, 조건별 1회
+python run_pilot.py --runs 5                              # 전부, 조건별 5회씩
+python run_pilot.py --runs 5 benchmarks/resume_page.json  # 하나만
 ```
 
-결과는 `results/<스펙id>_<조건>.html` + `results/summary.json`에 저장됨.
+같은 프롬프트로도 생성 결과가 매번 달라서 한 번 돌린 결과로는 원본/첨삭본 우열을
+말할 수 없음 — 비교 결론을 낼 때는 `--runs 5` 이상으로 돌릴 것. 첨삭본도 반복마다
+`/optimize`를 새로 호출함.
+
+결과는 `results/`에 저장됨:
+- `<스펙id>_<조건>_r<회차>.html` — 생성된 결과물
+- `<스펙id>_<조건>_r<회차>_desktop.png` / `_mobile.png` — 상호작용 전 첫 화면 스크린샷(1280px / 375px)
+- `summary.json` — 회차별 채점 결과 + 조건별 집계(평균·최소·최대 충족률, 항목별 통과 횟수, 평균 출력 토큰)
+- `report.html` — 조건별 집계와 원본/첨삭본 스크린샷을 나란히 보여주는 비교 리포트.
+  A/B 통과 횟수가 다른 체크 항목은 노란색으로 표시됨. API 호출 없이 리포트만
+  다시 만들려면 `python report.py`.
 
 ## 벤치마크 스펙 추가하는 법
 
@@ -47,7 +58,10 @@ python run_pilot.py benchmarks/resume_page.json   # 하나만
 ```
 
 체크 타입은 `checks.py` 참고 (`element_exists` / `element_count_min` /
-`text_contains_any` / `text_regex` / `text_regex_count_min` / `any_of`).
+`text_contains_any` / `text_regex` / `text_regex_count_min` / `computed_style_any` / `any_of`).
+취소선·색상처럼 "보이는 스타일"을 확인할 땐 `computed_style_any`를 쓸 것 —
+클래스명·인라인 style·`input:checked ~ span` 같은 CSS 선택자 등 구현 방식이 달라도
+브라우저가 실제로 적용한 스타일로 판정함.
 `text_contains_any`/`text_regex`는 **렌더링된 본문 텍스트만** 봄 —
 `<style>`/`<script>` 내용이나 `placeholder` 같은 HTML 속성은 거기 안 잡히니,
 그런 건 `element_exists`를 CSS 속성 선택자(`input[placeholder]`,
