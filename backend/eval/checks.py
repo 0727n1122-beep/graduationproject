@@ -7,6 +7,8 @@ checks.py — 벤치마크 체크리스트 항목을 실제 Playwright 검사로
   - text_contains_any      : body 텍스트에 texts 중 하나라도 포함되면 통과
   - text_regex             : body 텍스트가 pattern(정규식)에 매치되면 통과
   - text_regex_count_min   : body 텍스트에서 pattern에 매치되는 횟수가 min 이상이면 통과
+  - computed_style_any     : selector 요소 중 실제 적용된 스타일(getComputedStyle)의 property에
+                             value가 들어간 요소가 하나라도 있으면 통과
   - any_of                 : checks 목록 중 하나라도 통과하면 통과 (조건 완화용)
 
 각 run_check 호출은 {"passed": bool, "detail": str}를 돌려줌.
@@ -60,6 +62,16 @@ def run_check(page, check: dict) -> dict:
         matches = re.findall(check["pattern"], body_text)
         count = len(matches)
         return {"passed": count >= check["min"], "detail": f"count={count}, min={check['min']}"}
+
+    if ctype == "computed_style_any":
+        # 클래스 토글이든 인라인 style이든 "input:checked ~ span" 같은 CSS 선택자든,
+        # 구현 방식과 무관하게 브라우저가 실제로 적용한 스타일로 판정
+        count = page.evaluate(
+            """([sel, prop, val]) => [...document.querySelectorAll(sel)]
+                .filter(el => getComputedStyle(el).getPropertyValue(prop).includes(val)).length""",
+            [check["selector"], check["property"], check["value"]],
+        )
+        return {"passed": count >= 1, "detail": f"count={count}"}
 
     if ctype == "any_of":
         results = [run_check(page, sub) for sub in check["checks"]]
