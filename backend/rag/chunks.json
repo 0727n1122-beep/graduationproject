@@ -63,5 +63,21 @@
     "url": "https://developers.openai.com/api/docs/guides/prompt-engineering",
     "categories": ["UNSTRUCTURED"],
     "text": "Markdown headers and lists can be helpful to mark distinct sections of a prompt, and to communicate hierarchy to the model. XML tags can help delineate where one piece of content (like a supporting document used for reference) begins and ends. XML attributes can also be used to define metadata about content in the prompt that can be referenced by your instructions."
+  },
+  {
+    "id": "plain-filler",
+    "doc": "Federal Plain Language Guidelines (PlainLanguage.gov) — Be concise",
+    "section": "Cut excess modifiers",
+    "url": "https://github.com/GSA/plainlanguage.gov/blob/main/_pages/guidelines/concise/index.md",
+    "categories": ["FILLER"],
+    "text": "Unnecessary words waste your audience's time. Challenge every word—do you need it? Eliminating unnecessary modifiers helps eliminate excess words—in \"this information is really critical\" you don't need \"really.\" We often use modifiers like absolutely, actually, completely, really, quite, totally, and very. But if you look closely, you'll find that they're probably not necessary and may even be nonsensical."
+  },
+  {
+    "id": "plain-redundant",
+    "doc": "Federal Plain Language Guidelines (PlainLanguage.gov) — Be concise",
+    "section": "Omit redundant words / Avoid doublets and triplets",
+    "url": "https://github.com/GSA/plainlanguage.gov/blob/main/_pages/guidelines/concise/index.md",
+    "categories": ["REDUNDANT"],
+    "text": "In \"The X Department and the Y Department worked together on a joint project,\" you don't need \"joint.\" You don't even need \"together.\" Saying that X and Y worked on a project says it all. \"Joint\" and \"together\" are redundant. English writers love to repeat the same concept by using different words that say the same thing: due and payable (due), cease and desist (stop), begin and commence (start)."
   }
 ]
