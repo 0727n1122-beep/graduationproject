@@ -46,10 +46,20 @@
     },
     {
       "id": "c4_summaries",
-      "description": "[명시] 글마다 요약 문단이 있다 (3개 이상)",
-      "type": "element_count_min",
-      "selector": "p",
-      "min": 3
+      "description": "[명시] 글마다 요약이 있다 (3개 이상, p든 div든 구조 무관)",
+      "type": "any_of",
+      "checks": [
+        {
+          "type": "element_count_min",
+          "selector": "p",
+          "min": 3
+        },
+        {
+          "type": "element_count_min",
+          "selector": "[class*=summary], [class*=excerpt], [class*=desc], [class*=preview]",
+          "min": 3
+        }
+      ]
     },
     {
       "id": "c5_newest_first",

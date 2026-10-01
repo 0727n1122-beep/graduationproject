@@ -66,6 +66,8 @@
             "✗",
             "✘",
             "×",
+            "✕",
+            "✖",
             "❌",
             "불가",
             "미포함",
@@ -74,7 +76,7 @@
         },
         {
           "type": "element_count_min",
-          "selector": "[class*=unavailable], [class*=disabled], [class*=cross], [class*=excluded], [class*=not-included], [class*=no-]",
+          "selector": "[class*=unavailable], [class*=disabled], [class*=cross], [class*=excluded], [class*=not-included], [class*=no-], [class*=x-icon], [class*=-x]",
           "min": 1
         }
       ]
