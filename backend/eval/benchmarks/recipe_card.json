@@ -6,6 +6,7 @@
     {
       "id": "c1_title",
       "description": "[명시] 요리 이름 제목이 있다 (h1/h2든 제목용 div든 구조 무관)",
+      "complaint": "요리 이름이 제목으로 안 보여요",
       "type": "any_of",
       "checks": [
         {
@@ -22,6 +23,7 @@
     {
       "id": "c2_ingredients",
       "description": "[명시] 재료가 3개 이상 나열된다",
+      "complaint": "재료 목록이 제대로 안 나와요",
       "type": "any_of",
       "checks": [
         {
@@ -38,7 +40,8 @@
     },
     {
       "id": "c3_steps",
-      "description": "[명시] 만드는 법이 순서대로 3단계 이상 있다",
+      "description": "[명시] 만드는 법이 순서대로 3단계 이상 있다 (태그·클래스 구조 무관)",
+      "complaint": "만드는 순서가 단계별로 안 나와요",
       "type": "any_of",
       "checks": [
         {
@@ -48,7 +51,12 @@
         },
         {
           "type": "element_count_min",
-          "selector": "[class*=step]",
+          "selector": "[class*=step], [class*=instruction-item], [class*=direction-item]",
+          "min": 3
+        },
+        {
+          "type": "text_regex_count_min",
+          "pattern": "(?m)^\\s*(?:\\d{1,2}|STEP\\s*\\d{1,2}|\\d{1,2}\\s*단계)[.)]?\\s*$|(?m)^\\s*\\d{1,2}[.)]\\s+\\S",
           "min": 3
         }
       ]
@@ -56,6 +64,7 @@
     {
       "id": "c4_photo_loaded",
       "description": "[명시] 음식 사진이 실제로 보인다 (깨진 이미지가 아님)",
+      "complaint": "사진이 안 보여요",
       "actions": [
         {
           "type": "wait",
@@ -68,6 +77,7 @@
     {
       "id": "c5_quantities",
       "description": "[암묵] 재료에 분량(숫자+단위)이 적혀 있다 (3개 이상)",
+      "complaint": "재료가 얼마나 들어가는지 양이 안 적혀 있어요",
       "type": "text_regex_count_min",
       "pattern": "\\d+(?:[./]\\d+)?\\s*(?:g|kg|ml|mL|L|컵|큰술|작은술|스푼|숟가락|개|알|장|쪽|모|줌|꼬집|T|t|tbsp|tsp|cup)",
       "min": 3
@@ -75,12 +85,14 @@
     {
       "id": "c6_time_servings",
       "description": "[암묵] 조리 시간이나 몇 인분인지 나온다",
+      "complaint": "몇 분 걸리는지, 몇 인분인지가 없어요",
       "type": "text_regex",
       "pattern": "\\d+\\s*(?:분|시간|인분|min|serving)"
     },
     {
       "id": "c7_mobile_fit",
       "description": "[암묵] 휴대폰 폭(375px)에서 가로로 넘치지 않는다 (좌우 스크롤 없음)",
+      "complaint": "폰으로 보면 화면이 옆으로 삐져나가서 좌우로 밀려요",
       "actions": [
         {
           "type": "set_viewport",
@@ -94,6 +106,7 @@
     {
       "id": "c8_viewport",
       "description": "[암묵] 휴대폰용 viewport meta 태그가 있다",
+      "complaint": "폰으로 보면 글씨가 엄청 작게 축소돼서 보여요",
       "type": "element_exists",
       "selector": "meta[name='viewport']"
     }

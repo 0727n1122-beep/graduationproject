@@ -6,6 +6,7 @@
     {
       "id": "c1_add",
       "description": "[명시] 7 + 8 = 을 누르면 15가 나온다",
+      "complaint": "7 더하기 8을 했는데 15가 안 나와요",
       "actions": [
         {
           "type": "click_text",
@@ -38,6 +39,7 @@
     {
       "id": "c2_multiply",
       "description": "[명시] 6 × 7 = 을 누르면 42가 나온다",
+      "complaint": "6 곱하기 7이 42로 안 나와요",
       "actions": [
         {
           "type": "click_text",
@@ -74,6 +76,7 @@
     {
       "id": "c3_divide",
       "description": "[명시] 9 ÷ 4 = 을 누르면 2.25가 나온다",
+      "complaint": "9 나누기 4를 하면 2.25가 안 나와요",
       "actions": [
         {
           "type": "click_text",
@@ -107,6 +110,7 @@
     {
       "id": "c4_multi_digit_chain",
       "description": "[암묵] 두 자리 수와 연속 계산: 12 + 30 + 5 = 은 47",
+      "complaint": "12 + 30 + 5처럼 이어서 계산하면 답이 이상해요",
       "actions": [
         {
           "type": "click_text",
@@ -163,6 +167,7 @@
     {
       "id": "c5_float",
       "description": "[암묵] 0.1 + 0.2 = 이 0.30000000000000004가 아니라 0.3으로 나온다",
+      "complaint": "0.1 더하기 0.2를 했더니 0.3이 안 나오고 이상한 숫자가 나와요",
       "actions": [
         {
           "type": "click_text",
@@ -221,6 +226,7 @@
     {
       "id": "c6_div_zero",
       "description": "[암묵] 0으로 나누면 Infinity/NaN이나 틀린 값 대신 오류 안내가 나온다",
+      "complaint": "0으로 나누면 이상한 값이 나오거나 그냥 0이 떠요. 안 된다고 알려줬으면 좋겠어요",
       "actions": [
         {
           "type": "click_text",
@@ -254,6 +260,7 @@
     {
       "id": "c7_clear",
       "description": "[암묵] 결과가 나온 뒤 C(초기화)를 누르면 지워진다",
+      "complaint": "C를 눌러도 결과가 안 지워져요",
       "actions": [
         {
           "type": "click_text",
@@ -304,6 +311,7 @@
     {
       "id": "c8_mobile_fit",
       "description": "[암묵] 휴대폰 폭(375px)에서 가로로 넘치지 않는다 (좌우 스크롤 없음)",
+      "complaint": "폰으로 보면 화면이 옆으로 삐져나가서 좌우로 밀려요",
       "actions": [
         {
           "type": "set_viewport",

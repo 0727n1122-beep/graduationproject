@@ -6,18 +6,21 @@
     {
       "id": "c1_name_input",
       "description": "[명시] 이름을 적는 칸이 있다",
+      "complaint": "이름 적는 칸이 없어요",
       "type": "element_exists",
       "selector": "input[type='text'], input:not([type])"
     },
     {
       "id": "c2_questions",
       "description": "[명시] 선택형 질문이 2개 이상 있다",
+      "complaint": "선택하는 질문이 너무 적어요",
       "type": "js",
       "expr": "const names = new Set([...document.querySelectorAll('input[type=radio], input[type=checkbox]')].map(e => e.name || e.id)); return names.size + document.querySelectorAll('select').length >= 2;"
     },
     {
       "id": "c3_submit_button",
       "description": "[명시] 제출 버튼이 있다",
+      "complaint": "제출 버튼이 없어요",
       "type": "any_of",
       "checks": [
         {
@@ -36,16 +39,18 @@
     {
       "id": "c4_label_clickable",
       "description": "[암묵] 선택지 글자를 눌러도 선택된다 (모든 선택지에 label 연결)",
+      "complaint": "선택지 글자를 눌러도 선택이 안 되고 작은 동그라미를 정확히 눌러야 해요",
       "type": "js",
       "expr": "const els = [...document.querySelectorAll('input[type=radio], input[type=checkbox]')]; return els.length > 0 && els.every(e => e.labels && e.labels.length > 0);"
     },
     {
       "id": "c5_blank_blocked",
       "description": "[암묵] 아무것도 안 적고 제출하면 막히거나 안내가 나온다",
+      "complaint": "아무것도 안 적고 제출해도 그냥 넘어가요",
       "actions": [
         {
           "type": "js",
-          "code": "window.__t = document.body.innerText; window.__had = /감사|제출되었|완료|접수되었|Thank|submitted|success/i.test(document.body.innerText);"
+          "code": "window.__t = document.body.innerText;"
         },
         {
           "type": "click",
@@ -59,15 +64,16 @@
         }
       ],
       "type": "js",
-      "expr": "const f = document.querySelector('form'); const invalid = f ? !f.checkValidity() : false; const reacted = window.__t !== undefined && (window.__dialogs.length > 0 || document.body.innerText !== window.__t); const success = window.__had === false && /감사|제출되었|완료|접수되었|Thank|submitted|success/i.test(document.body.innerText + ' ' + window.__dialogs.join(' ')); return (invalid || reacted) && !success;"
+      "expr": "const f = document.querySelector('form'); const invalid = f ? !f.checkValidity() : false; const reacted = window.__t !== undefined && (window.__dialogs.length > 0 || document.body.innerText !== window.__t); const before = new Set((window.__t || '').split('\\n')); const fresh = window.__t === undefined ? '' : document.body.innerText.split('\\n').filter(l => !before.has(l)).join(' ') + ' ' + window.__dialogs.join(' '); const success = /감사|제출되었|제출된|제출 ?결과|완료|접수되었|저장되었|저장 ?완료|Thank|submitted|success|saved/i.test(fresh); return (invalid || reacted) && !success;"
     },
     {
       "id": "c6_submit_success",
       "description": "[암묵] 다 채워서 제출하면 '제출 완료/감사' 같은 확인이 나온다",
+      "complaint": "다 채우고 제출했는데 제출됐는지 아무 표시가 없어요",
       "actions": [
         {
           "type": "js",
-          "code": "const set = (e, v) => { e.value = v; e.dispatchEvent(new Event('input', {bubbles: true})); e.dispatchEvent(new Event('change', {bubbles: true})); }; document.querySelectorAll(\"input[type=text], input:not([type]), textarea\").forEach(e => set(e, '홍길동')); document.querySelectorAll('input[type=email]').forEach(e => set(e, 'test@example.com')); document.querySelectorAll('input[type=tel]').forEach(e => set(e, '010-1234-5678')); document.querySelectorAll('input[type=number]').forEach(e => set(e, e.min || '20')); const seen = new Set(); document.querySelectorAll('input[type=radio], input[type=checkbox]').forEach(e => { if (!seen.has(e.name || e.id)) { seen.add(e.name || e.id); e.checked = true; e.dispatchEvent(new Event('change', {bubbles: true})); } }); document.querySelectorAll('select').forEach(s => { const o = [...s.options].find(o => o.value); if (o) { s.value = o.value; s.dispatchEvent(new Event('change', {bubbles: true})); } }); window.__had = /감사|제출되었|완료|접수되었|Thank|submitted|success/i.test(document.body.innerText);"
+          "code": "const set = (e, v) => { e.value = v; e.dispatchEvent(new Event('input', {bubbles: true})); e.dispatchEvent(new Event('change', {bubbles: true})); }; document.querySelectorAll(\"input[type=text], input:not([type]), textarea\").forEach(e => set(e, '홍길동')); document.querySelectorAll('input[type=email]').forEach(e => set(e, 'test@example.com')); document.querySelectorAll('input[type=tel]').forEach(e => set(e, '010-1234-5678')); document.querySelectorAll('input[type=number]').forEach(e => set(e, e.min || '20')); const seen = new Set(); document.querySelectorAll('input[type=radio], input[type=checkbox]').forEach(e => { if (!seen.has(e.name || e.id)) { seen.add(e.name || e.id); e.checked = true; e.dispatchEvent(new Event('change', {bubbles: true})); } }); document.querySelectorAll('select').forEach(s => { const o = [...s.options].find(o => o.value); if (o) { s.value = o.value; s.dispatchEvent(new Event('change', {bubbles: true})); } }); window.__t = document.body.innerText;"
         },
         {
           "type": "click",
@@ -85,11 +91,12 @@
         }
       ],
       "type": "js",
-      "expr": "return window.__had === false && /감사|제출되었|완료|접수되었|Thank|submitted|success/i.test(document.body.innerText + ' ' + window.__dialogs.join(' '));"
+      "expr": "const before = new Set((window.__t || '').split('\\n')); const fresh = window.__t === undefined ? '' : document.body.innerText.split('\\n').filter(l => !before.has(l)).join(' ') + ' ' + window.__dialogs.join(' '); return /감사|제출되었|제출된|제출 ?결과|완료|접수되었|저장되었|저장 ?완료|Thank|submitted|success|saved/i.test(fresh);"
     },
     {
       "id": "c7_mobile_fit",
       "description": "[암묵] 휴대폰 폭(375px)에서 가로로 넘치지 않는다 (좌우 스크롤 없음)",
+      "complaint": "폰으로 보면 화면이 옆으로 삐져나가서 좌우로 밀려요",
       "actions": [
         {
           "type": "set_viewport",

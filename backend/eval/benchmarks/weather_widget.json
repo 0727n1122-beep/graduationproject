@@ -6,18 +6,21 @@
     {
       "id": "c1_temperature",
       "description": "[명시] 온도(숫자+°/도)가 보인다",
+      "complaint": "온도가 안 보여요",
       "type": "text_regex",
       "pattern": "\\d{1,3}\\s*(°|도)"
     },
     {
       "id": "c2_condition",
       "description": "[명시] 맑음/흐림 같은 날씨 상태가 보인다",
+      "complaint": "맑음, 흐림 같은 날씨 상태가 안 나와요",
       "type": "text_regex",
       "pattern": "맑|흐림|흐리|비|눈|구름|안개|바람|소나기|천둥|뇌우|황사|화창|(?i:sunny|cloudy|clear|rain|snow|fog|wind|storm|overcast|drizzle)"
     },
     {
       "id": "c3_icon",
       "description": "[명시] 날씨 아이콘(이미지/SVG/아이콘 클래스/이모지)이 있다",
+      "complaint": "날씨 아이콘이 없어요",
       "type": "any_of",
       "checks": [
         {
@@ -33,6 +36,7 @@
     {
       "id": "c4_seven_days",
       "description": "[명시] 일주일치(7일) 예보가 있다",
+      "complaint": "일주일치 날씨가 다 안 나와요",
       "type": "any_of",
       "checks": [
         {
@@ -60,6 +64,7 @@
     {
       "id": "c5_forecast_temps",
       "description": "[암묵] 예보 각 날에도 기온이 나온다 (오늘 포함 온도 표시 8개 이상)",
+      "complaint": "다른 날들은 기온이 안 나와요",
       "type": "text_regex_count_min",
       "pattern": "\\d{1,3}\\s*(°|도)",
       "min": 8
@@ -67,12 +72,14 @@
     {
       "id": "c6_real_dates",
       "description": "[암묵] 날짜를 보여준다면 실제 오늘 기준 날짜다 (예시로 박아둔 날짜가 아님)",
+      "complaint": "날짜가 오늘 날짜가 아니라 엉뚱한 날짜로 나와요",
       "type": "js",
       "expr": "const now = new Date(), t = document.body.innerText, found = []; for (const m of t.matchAll(/(\\d{4})\\s*[.\\-\\/년]\\s*(\\d{1,2})\\s*[.\\-\\/월]\\s*(\\d{1,2})/g)) found.push([+m[1], +m[2], +m[3]]); for (const m of t.matchAll(/(?<![\\d년.\\-\\/]\\s?)(\\d{1,2})월\\s*(\\d{1,2})일/g)) found.push([now.getFullYear(), +m[1], +m[2]]); for (const m of t.matchAll(/(?<![\\d.\\/])(\\d{1,2})\\/(\\d{1,2})(?![\\d\\/])/g)) found.push([now.getFullYear(), +m[1], +m[2]]); const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); return found.every(([y, mm, dd]) => { const diff = (new Date(y, mm - 1, dd) - today) / 86400000; return diff >= -1 && diff <= 8; });"
     },
     {
       "id": "c7_mobile_fit",
       "description": "[암묵] 휴대폰 폭(375px)에서 가로로 넘치지 않는다 (좌우 스크롤 없음)",
+      "complaint": "폰으로 보면 화면이 옆으로 삐져나가서 좌우로 밀려요",
       "actions": [
         {
           "type": "set_viewport",

@@ -1,0 +1,140 @@
+{
+  "id": "signup_form",
+  "name": "회원가입 폼 (엉킨 프롬프트)",
+  "original_prompt": "회원가입 페이지 만들어주세요!! 이메일이랑 비밀번호 넣는거 있고 비밀번호 확인도 있어야되고요 그 비번 두번 치는거요. 아 닉네임도요. 그리고 약관 동의 체크하는 것도 있어야 돼요 그거 안 하면 가입 안 되게. 그리고 비밀번호는 너무 쉬우면 안 되게 해주세요 보안 때문에요 ㅎㅎ 가입 버튼 누르면 가입 완료 이런 거 뜨면 좋겠어요 아 그리고 디자인은 요즘 느낌으로 부탁드려요 그 토스 같은? 비밀번호 확인 꼭이요 꼭!!",
+  "checklist": [
+    {
+      "id": "c1_fields",
+      "description": "[명시] 이메일·비밀번호·비밀번호 확인·닉네임 칸이 모두 있다",
+      "complaint": "이메일, 비밀번호, 비밀번호 확인, 닉네임 칸이 다 있지는 않아요",
+      "type": "js",
+      "expr": "const ins = [...document.querySelectorAll('input')]; const l = e => [e.placeholder, e.name, e.id, e.labels && e.labels[0] ? e.labels[0].innerText : ''].join(' '); return ins.some(e => e.type === 'email' || /이메일|email/i.test(l(e))) && [...document.querySelectorAll('input')].filter(e => e.type === 'password' || /비밀번호|비번|password/i.test([e.placeholder, e.name, e.id, e.labels && e.labels[0] ? e.labels[0].innerText : ''].join(' '))).length >= 2 && ins.some(e => /닉네임|nickname|별명/i.test(l(e)));"
+    },
+    {
+      "id": "c2_terms_required",
+      "description": "[명시] 약관 동의를 안 하면 가입이 안 된다",
+      "complaint": "약관 동의를 안 해도 가입이 돼요",
+      "actions": [
+        {
+          "type": "js",
+          "code": "(() => { const set = (e, v) => { const d = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(e), 'value'); d.set.call(e, v); e.dispatchEvent(new Event('input', {bubbles: true})); e.dispatchEvent(new Event('change', {bubbles: true})); }; const lab = e => [e.placeholder, e.name, e.id, e.getAttribute('aria-label'), e.labels && e.labels[0] ? e.labels[0].innerText : ''].join(' ').toLowerCase(); const ins = [...document.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=button])')]; const email = ins.find(e => e.type === 'email') || ins.find(e => e.type !== 'password' && /이메일|email/.test(lab(e))); const pws = ins.filter(e => e.type === 'password' || /비밀번호|비번|password/.test(lab(e))); const nick = ins.find(e => e !== email && !pws.includes(e) && /닉네임|nickname|별명|이름|name/.test(lab(e)))   || ins.find(e => e !== email && !pws.includes(e) && e.type === 'text'); if (!email || pws.length < 2) throw new Error('이메일/비밀번호 입력칸 부족'); set(email, 'test@example.com'); set(pws[0], 'Abcd1234!'); set(pws[1], 'Abcd1234!'); if (nick) set(nick, '홍길동'); document.querySelectorAll('input[type=checkbox]').forEach(c => { if (c.checked !== false) c.click(); }); window.__t = document.body.innerText; })()"
+        },
+        {
+          "type": "js",
+          "code": "const bs = [...document.querySelectorAll('button, [role=button], input[type=button], input[type=submit]')]; const txt = b => (b.innerText || b.value || '').trim(); let b; for (const re of [/가입|sign ?up|register|계정 ?생성|create/i, /완료|제출|submit/i]) { b = bs.find(x => re.test(txt(x))); if (b) break; } if (!b) throw new Error('가입 버튼 없음'); b.click();"
+        },
+        {
+          "type": "wait",
+          "ms": 1500
+        }
+      ],
+      "type": "js",
+      "expr": "const before = new Set((window.__t || '').split('\\n')); const fresh = window.__t === undefined ? '' : document.body.innerText.split('\\n').filter(l => !before.has(l)).join(' ') + ' ' + window.__dialogs.join(' '); return window.__t !== undefined && !/가입 ?완료|가입이 ?완료|가입되었|환영|성공|welcome|success/i.test(fresh);"
+    },
+    {
+      "id": "c3_weak_password",
+      "description": "[명시] 비밀번호가 1234처럼 너무 쉬우면 가입이 안 된다",
+      "complaint": "비밀번호를 1234처럼 쉽게 해도 가입이 돼요",
+      "actions": [
+        {
+          "type": "js",
+          "code": "(() => { const set = (e, v) => { const d = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(e), 'value'); d.set.call(e, v); e.dispatchEvent(new Event('input', {bubbles: true})); e.dispatchEvent(new Event('change', {bubbles: true})); }; const lab = e => [e.placeholder, e.name, e.id, e.getAttribute('aria-label'), e.labels && e.labels[0] ? e.labels[0].innerText : ''].join(' ').toLowerCase(); const ins = [...document.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=button])')]; const email = ins.find(e => e.type === 'email') || ins.find(e => e.type !== 'password' && /이메일|email/.test(lab(e))); const pws = ins.filter(e => e.type === 'password' || /비밀번호|비번|password/.test(lab(e))); const nick = ins.find(e => e !== email && !pws.includes(e) && /닉네임|nickname|별명|이름|name/.test(lab(e)))   || ins.find(e => e !== email && !pws.includes(e) && e.type === 'text'); if (!email || pws.length < 2) throw new Error('이메일/비밀번호 입력칸 부족'); set(email, 'test@example.com'); set(pws[0], '1234'); set(pws[1], '1234'); if (nick) set(nick, '홍길동'); document.querySelectorAll('input[type=checkbox]').forEach(c => { if (c.checked !== true) c.click(); }); window.__t = document.body.innerText; })()"
+        },
+        {
+          "type": "js",
+          "code": "const bs = [...document.querySelectorAll('button, [role=button], input[type=button], input[type=submit]')]; const txt = b => (b.innerText || b.value || '').trim(); let b; for (const re of [/가입|sign ?up|register|계정 ?생성|create/i, /완료|제출|submit/i]) { b = bs.find(x => re.test(txt(x))); if (b) break; } if (!b) throw new Error('가입 버튼 없음'); b.click();"
+        },
+        {
+          "type": "wait",
+          "ms": 1500
+        }
+      ],
+      "type": "js",
+      "expr": "const before = new Set((window.__t || '').split('\\n')); const fresh = window.__t === undefined ? '' : document.body.innerText.split('\\n').filter(l => !before.has(l)).join(' ') + ' ' + window.__dialogs.join(' '); return window.__t !== undefined && !/가입 ?완료|가입이 ?완료|가입되었|환영|성공|welcome|success/i.test(fresh);"
+    },
+    {
+      "id": "c4_success",
+      "description": "[명시] 다 제대로 넣고 가입하면 '가입 완료' 같은 안내가 뜬다",
+      "complaint": "다 제대로 넣고 가입을 눌렀는데 가입 완료 같은 게 안 떠요",
+      "actions": [
+        {
+          "type": "js",
+          "code": "(() => { const set = (e, v) => { const d = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(e), 'value'); d.set.call(e, v); e.dispatchEvent(new Event('input', {bubbles: true})); e.dispatchEvent(new Event('change', {bubbles: true})); }; const lab = e => [e.placeholder, e.name, e.id, e.getAttribute('aria-label'), e.labels && e.labels[0] ? e.labels[0].innerText : ''].join(' ').toLowerCase(); const ins = [...document.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=button])')]; const email = ins.find(e => e.type === 'email') || ins.find(e => e.type !== 'password' && /이메일|email/.test(lab(e))); const pws = ins.filter(e => e.type === 'password' || /비밀번호|비번|password/.test(lab(e))); const nick = ins.find(e => e !== email && !pws.includes(e) && /닉네임|nickname|별명|이름|name/.test(lab(e)))   || ins.find(e => e !== email && !pws.includes(e) && e.type === 'text'); if (!email || pws.length < 2) throw new Error('이메일/비밀번호 입력칸 부족'); set(email, 'test@example.com'); set(pws[0], 'Abcd1234!'); set(pws[1], 'Abcd1234!'); if (nick) set(nick, '홍길동'); document.querySelectorAll('input[type=checkbox]').forEach(c => { if (c.checked !== true) c.click(); }); window.__t = document.body.innerText; })()"
+        },
+        {
+          "type": "js",
+          "code": "const bs = [...document.querySelectorAll('button, [role=button], input[type=button], input[type=submit]')]; const txt = b => (b.innerText || b.value || '').trim(); let b; for (const re of [/가입|sign ?up|register|계정 ?생성|create/i, /완료|제출|submit/i]) { b = bs.find(x => re.test(txt(x))); if (b) break; } if (!b) throw new Error('가입 버튼 없음'); b.click();"
+        },
+        {
+          "type": "wait",
+          "ms": 1500
+        }
+      ],
+      "type": "js",
+      "expr": "const before = new Set((window.__t || '').split('\\n')); const fresh = window.__t === undefined ? '' : document.body.innerText.split('\\n').filter(l => !before.has(l)).join(' ') + ' ' + window.__dialogs.join(' '); return /가입 ?완료|가입이 ?완료|가입되었|환영|성공|welcome|success/i.test(fresh);"
+    },
+    {
+      "id": "c5_mismatch",
+      "description": "[명시] 비밀번호와 비밀번호 확인이 다르면 가입이 안 된다",
+      "complaint": "비밀번호랑 비밀번호 확인이 달라도 가입이 돼요",
+      "actions": [
+        {
+          "type": "js",
+          "code": "(() => { const set = (e, v) => { const d = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(e), 'value'); d.set.call(e, v); e.dispatchEvent(new Event('input', {bubbles: true})); e.dispatchEvent(new Event('change', {bubbles: true})); }; const lab = e => [e.placeholder, e.name, e.id, e.getAttribute('aria-label'), e.labels && e.labels[0] ? e.labels[0].innerText : ''].join(' ').toLowerCase(); const ins = [...document.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=button])')]; const email = ins.find(e => e.type === 'email') || ins.find(e => e.type !== 'password' && /이메일|email/.test(lab(e))); const pws = ins.filter(e => e.type === 'password' || /비밀번호|비번|password/.test(lab(e))); const nick = ins.find(e => e !== email && !pws.includes(e) && /닉네임|nickname|별명|이름|name/.test(lab(e)))   || ins.find(e => e !== email && !pws.includes(e) && e.type === 'text'); if (!email || pws.length < 2) throw new Error('이메일/비밀번호 입력칸 부족'); set(email, 'test@example.com'); set(pws[0], 'Abcd1234!'); set(pws[1], 'Abcd1234@'); if (nick) set(nick, '홍길동'); document.querySelectorAll('input[type=checkbox]').forEach(c => { if (c.checked !== true) c.click(); }); window.__t = document.body.innerText; })()"
+        },
+        {
+          "type": "js",
+          "code": "const bs = [...document.querySelectorAll('button, [role=button], input[type=button], input[type=submit]')]; const txt = b => (b.innerText || b.value || '').trim(); let b; for (const re of [/가입|sign ?up|register|계정 ?생성|create/i, /완료|제출|submit/i]) { b = bs.find(x => re.test(txt(x))); if (b) break; } if (!b) throw new Error('가입 버튼 없음'); b.click();"
+        },
+        {
+          "type": "wait",
+          "ms": 1500
+        }
+      ],
+      "type": "js",
+      "expr": "const before = new Set((window.__t || '').split('\\n')); const fresh = window.__t === undefined ? '' : document.body.innerText.split('\\n').filter(l => !before.has(l)).join(' ') + ' ' + window.__dialogs.join(' '); return window.__t !== undefined && !/가입 ?완료|가입이 ?완료|가입되었|환영|성공|welcome|success/i.test(fresh);"
+    },
+    {
+      "id": "c6_bad_email",
+      "description": "[암묵] 이메일 형식이 틀리면(abc) 가입이 안 된다",
+      "complaint": "이메일을 abc처럼 이상하게 넣어도 가입이 돼요",
+      "actions": [
+        {
+          "type": "js",
+          "code": "(() => { const set = (e, v) => { const d = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(e), 'value'); d.set.call(e, v); e.dispatchEvent(new Event('input', {bubbles: true})); e.dispatchEvent(new Event('change', {bubbles: true})); }; const lab = e => [e.placeholder, e.name, e.id, e.getAttribute('aria-label'), e.labels && e.labels[0] ? e.labels[0].innerText : ''].join(' ').toLowerCase(); const ins = [...document.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=button])')]; const email = ins.find(e => e.type === 'email') || ins.find(e => e.type !== 'password' && /이메일|email/.test(lab(e))); const pws = ins.filter(e => e.type === 'password' || /비밀번호|비번|password/.test(lab(e))); const nick = ins.find(e => e !== email && !pws.includes(e) && /닉네임|nickname|별명|이름|name/.test(lab(e)))   || ins.find(e => e !== email && !pws.includes(e) && e.type === 'text'); if (!email || pws.length < 2) throw new Error('이메일/비밀번호 입력칸 부족'); set(email, 'abc'); set(pws[0], 'Abcd1234!'); set(pws[1], 'Abcd1234!'); if (nick) set(nick, '홍길동'); document.querySelectorAll('input[type=checkbox]').forEach(c => { if (c.checked !== true) c.click(); }); window.__t = document.body.innerText; })()"
+        },
+        {
+          "type": "js",
+          "code": "const bs = [...document.querySelectorAll('button, [role=button], input[type=button], input[type=submit]')]; const txt = b => (b.innerText || b.value || '').trim(); let b; for (const re of [/가입|sign ?up|register|계정 ?생성|create/i, /완료|제출|submit/i]) { b = bs.find(x => re.test(txt(x))); if (b) break; } if (!b) throw new Error('가입 버튼 없음'); b.click();"
+        },
+        {
+          "type": "wait",
+          "ms": 1500
+        }
+      ],
+      "type": "js",
+      "expr": "const before = new Set((window.__t || '').split('\\n')); const fresh = window.__t === undefined ? '' : document.body.innerText.split('\\n').filter(l => !before.has(l)).join(' ') + ' ' + window.__dialogs.join(' '); return window.__t !== undefined && !/가입 ?완료|가입이 ?완료|가입되었|환영|성공|welcome|success/i.test(fresh);"
+    },
+    {
+      "id": "c7_masked",
+      "description": "[암묵] 비밀번호 칸 두 개 모두 글자가 가려진다(●●●)",
+      "complaint": "비밀번호 칸에 글자가 가려지지 않고 그대로 보여요",
+      "type": "js",
+      "expr": "const p = [...document.querySelectorAll('input')].filter(e => e.type === 'password' || /비밀번호|비번|password/i.test([e.placeholder, e.name, e.id, e.labels && e.labels[0] ? e.labels[0].innerText : ''].join(' '))); return p.length >= 2 && p.every(e => e.type === 'password');"
+    },
+    {
+      "id": "c8_mobile_fit",
+      "description": "[암묵] 휴대폰 폭(375px)에서 가로로 넘치지 않는다 (좌우 스크롤 없음)",
+      "complaint": "폰으로 보면 화면이 옆으로 삐져나가서 좌우로 밀려요",
+      "actions": [
+        {
+          "type": "set_viewport",
+          "width": 375,
+          "height": 812
+        }
+      ],
+      "type": "js",
+      "expr": "return document.documentElement.scrollWidth <= window.innerWidth + 1;"
+    }
+  ]
+}
