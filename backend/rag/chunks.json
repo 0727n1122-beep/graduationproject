@@ -47,5 +47,21 @@
     "url": "https://xp123.com/invest-in-good-stories-and-smart-tasks/",
     "categories": ["MONOLITHIC_REQUEST"],
     "text": "Good stories tend to be small. Stories typically represent at most a few person-weeks worth of work. Above this size, it seems to be too hard to know what's in the story's scope. Stories are easiest to work with if they are independent — we'd like them to not overlap in concept, and we'd like to be able to schedule and implement them in any order. A good story is testable: writing a story card carries an implicit promise — \"I understand what I want well enough that I could write a test for it.\""
+  },
+  {
+    "id": "openai-context",
+    "doc": "OpenAI — Prompt engineering guide",
+    "section": "Include relevant context information",
+    "url": "https://developers.openai.com/api/docs/guides/prompt-engineering",
+    "categories": ["AMBIGUOUS", "MISSING_CONSTRAINT"],
+    "text": "It is often useful to include additional context information the model can use to generate a response within the prompt you give the model. There are a few common reasons why you might do this: to give the model access to proprietary data, or any other data outside the data set the model was trained on, and to constrain the model's response to a specific set of resources that you have determined will be most beneficial."
+  },
+  {
+    "id": "openai-xml",
+    "doc": "OpenAI — Prompt engineering guide",
+    "section": "Message formatting with Markdown and XML",
+    "url": "https://developers.openai.com/api/docs/guides/prompt-engineering",
+    "categories": ["UNSTRUCTURED"],
+    "text": "Markdown headers and lists can be helpful to mark distinct sections of a prompt, and to communicate hierarchy to the model. XML tags can help delineate where one piece of content (like a supporting document used for reference) begins and ends. XML attributes can also be used to define metadata about content in the prompt that can be referenced by your instructions."
   }
 ]
