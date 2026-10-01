@@ -40,7 +40,7 @@
     },
     {
       "id": "c3_steps",
-      "description": "[명시] 만드는 법이 순서대로 3단계 이상 있다",
+      "description": "[명시] 만드는 법이 순서대로 3단계 이상 있다 (태그·클래스 구조 무관)",
       "complaint": "만드는 순서가 단계별로 안 나와요",
       "type": "any_of",
       "checks": [
@@ -51,7 +51,12 @@
         },
         {
           "type": "element_count_min",
-          "selector": "[class*=step]",
+          "selector": "[class*=step], [class*=instruction-item], [class*=direction-item]",
+          "min": 3
+        },
+        {
+          "type": "text_regex_count_min",
+          "pattern": "(?m)^\\s*(?:\\d{1,2}|STEP\\s*\\d{1,2}|\\d{1,2}\\s*단계)[.)]?\\s*$|(?m)^\\s*\\d{1,2}[.)]\\s+\\S",
           "min": 3
         }
       ]

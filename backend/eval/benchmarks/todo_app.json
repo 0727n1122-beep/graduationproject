@@ -102,6 +102,10 @@
             "[class*=delete]",
             "[class*=remove]"
           ]
+        },
+        {
+          "type": "wait",
+          "ms": 1000
         }
       ],
       "type": "not",

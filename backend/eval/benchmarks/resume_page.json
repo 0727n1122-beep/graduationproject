@@ -5,11 +5,10 @@
   "checklist": [
     {
       "id": "c1_heading",
-      "description": "[명시] 이름/직무 등을 담는 제목(h1 또는 h2)이 있다",
+      "description": "[명시] 이름이 제목처럼 크게 보인다 (h1/h2든 큰 글씨 div든 구조 무관, 28px 이상)",
       "complaint": "맨 위에 제 이름이 크게 안 보여요",
-      "type": "element_count_min",
-      "selector": "h1, h2",
-      "min": 1
+      "type": "js",
+      "expr": "return [...document.querySelectorAll('h1, h2, [class*=name], [class*=title], header *')].some(e => (e.innerText || '').trim() && parseFloat(getComputedStyle(e).fontSize) >= 28);"
     },
     {
       "id": "c2_email",

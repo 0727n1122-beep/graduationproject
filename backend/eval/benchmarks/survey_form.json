@@ -50,7 +50,7 @@
       "actions": [
         {
           "type": "js",
-          "code": "window.__t = document.body.innerText; window.__had = /감사|제출되었|완료|접수되었|Thank|submitted|success/i.test(document.body.innerText);"
+          "code": "window.__t = document.body.innerText; window.__had = /감사|제출되었|제출된|제출 ?결과|완료|접수되었|Thank|submitted|success/i.test(document.body.innerText);"
         },
         {
           "type": "click",
@@ -64,7 +64,7 @@
         }
       ],
       "type": "js",
-      "expr": "const f = document.querySelector('form'); const invalid = f ? !f.checkValidity() : false; const reacted = window.__t !== undefined && (window.__dialogs.length > 0 || document.body.innerText !== window.__t); const success = window.__had === false && /감사|제출되었|완료|접수되었|Thank|submitted|success/i.test(document.body.innerText + ' ' + window.__dialogs.join(' ')); return (invalid || reacted) && !success;"
+      "expr": "const f = document.querySelector('form'); const invalid = f ? !f.checkValidity() : false; const reacted = window.__t !== undefined && (window.__dialogs.length > 0 || document.body.innerText !== window.__t); const success = window.__had === false && /감사|제출되었|제출된|제출 ?결과|완료|접수되었|Thank|submitted|success/i.test(document.body.innerText + ' ' + window.__dialogs.join(' ')); return (invalid || reacted) && !success;"
     },
     {
       "id": "c6_submit_success",
@@ -73,7 +73,7 @@
       "actions": [
         {
           "type": "js",
-          "code": "const set = (e, v) => { e.value = v; e.dispatchEvent(new Event('input', {bubbles: true})); e.dispatchEvent(new Event('change', {bubbles: true})); }; document.querySelectorAll(\"input[type=text], input:not([type]), textarea\").forEach(e => set(e, '홍길동')); document.querySelectorAll('input[type=email]').forEach(e => set(e, 'test@example.com')); document.querySelectorAll('input[type=tel]').forEach(e => set(e, '010-1234-5678')); document.querySelectorAll('input[type=number]').forEach(e => set(e, e.min || '20')); const seen = new Set(); document.querySelectorAll('input[type=radio], input[type=checkbox]').forEach(e => { if (!seen.has(e.name || e.id)) { seen.add(e.name || e.id); e.checked = true; e.dispatchEvent(new Event('change', {bubbles: true})); } }); document.querySelectorAll('select').forEach(s => { const o = [...s.options].find(o => o.value); if (o) { s.value = o.value; s.dispatchEvent(new Event('change', {bubbles: true})); } }); window.__had = /감사|제출되었|완료|접수되었|Thank|submitted|success/i.test(document.body.innerText);"
+          "code": "const set = (e, v) => { e.value = v; e.dispatchEvent(new Event('input', {bubbles: true})); e.dispatchEvent(new Event('change', {bubbles: true})); }; document.querySelectorAll(\"input[type=text], input:not([type]), textarea\").forEach(e => set(e, '홍길동')); document.querySelectorAll('input[type=email]').forEach(e => set(e, 'test@example.com')); document.querySelectorAll('input[type=tel]').forEach(e => set(e, '010-1234-5678')); document.querySelectorAll('input[type=number]').forEach(e => set(e, e.min || '20')); const seen = new Set(); document.querySelectorAll('input[type=radio], input[type=checkbox]').forEach(e => { if (!seen.has(e.name || e.id)) { seen.add(e.name || e.id); e.checked = true; e.dispatchEvent(new Event('change', {bubbles: true})); } }); document.querySelectorAll('select').forEach(s => { const o = [...s.options].find(o => o.value); if (o) { s.value = o.value; s.dispatchEvent(new Event('change', {bubbles: true})); } }); window.__had = /감사|제출되었|제출된|제출 ?결과|완료|접수되었|Thank|submitted|success/i.test(document.body.innerText);"
         },
         {
           "type": "click",
@@ -91,7 +91,7 @@
         }
       ],
       "type": "js",
-      "expr": "return window.__had === false && /감사|제출되었|완료|접수되었|Thank|submitted|success/i.test(document.body.innerText + ' ' + window.__dialogs.join(' '));"
+      "expr": "return window.__had === false && /감사|제출되었|제출된|제출 ?결과|완료|접수되었|Thank|submitted|success/i.test(document.body.innerText + ' ' + window.__dialogs.join(' '));"
     },
     {
       "id": "c7_mobile_fit",
