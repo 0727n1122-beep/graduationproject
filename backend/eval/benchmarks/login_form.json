@@ -4,43 +4,143 @@
   "original_prompt": "로그인 화면 만들어줘 아이디 비번 입력하고 로그인 버튼 있으면 되고 회원가입 링크도 하나 있으면 좋겠어",
   "checklist": [
     {
-      "id": "c1_username",
-      "description": "아이디/이메일 입력창이 있다",
+      "id": "c1_id_input",
+      "description": "[명시] 아이디/이메일 입력칸이 있다",
       "type": "element_exists",
-      "selector": "input[type='text'], input[type='email'], input:not([type])"
+      "selector": "input[type='email'], input[type='text'], input:not([type])"
     },
     {
       "id": "c2_password",
-      "description": "비밀번호 입력창이 있다",
+      "description": "[명시] 비밀번호 입력칸이 가려진다(●●●)",
       "type": "element_exists",
       "selector": "input[type='password']"
     },
     {
       "id": "c3_login_button",
-      "description": "로그인 버튼이 있다",
+      "description": "[명시] 로그인 버튼이 있다",
       "type": "any_of",
       "checks": [
-        { "type": "element_exists", "selector": "button[type='submit']" },
-        { "type": "text_contains_any", "texts": ["로그인", "Login", "Sign in"] }
+        {
+          "type": "element_exists",
+          "selector": "button[type='submit'], input[type='submit']"
+        },
+        {
+          "type": "text_contains_any",
+          "texts": [
+            "로그인",
+            "Login",
+            "Sign in"
+          ]
+        }
       ]
     },
     {
       "id": "c4_signup_link",
-      "description": "회원가입 관련 링크/텍스트가 있다",
-      "type": "text_contains_any",
-      "texts": ["회원가입", "가입하기", "Sign up"]
+      "description": "[명시] 회원가입 링크가 눌리는 요소(a/button)다",
+      "type": "element_exists",
+      "selector": "a:has-text('회원가입'), button:has-text('회원가입'), a:has-text('가입'), a:has-text('Sign up'), button:has-text('Sign up')"
     },
     {
-      "id": "c5_form_tag",
-      "description": "form 태그로 감싸져 있다",
-      "type": "element_exists",
-      "selector": "form"
+      "id": "c5_blank_feedback",
+      "description": "[암묵] 빈 칸으로 로그인을 누르면 막히거나 안내가 나온다",
+      "actions": [
+        {
+          "type": "js",
+          "code": "window.__t = document.body.innerText; window.__u = location.href;"
+        },
+        {
+          "type": "click",
+          "selectors": [
+            "button[type='submit']",
+            "input[type='submit']",
+            "button:has-text('로그인')",
+            "button:has-text('Login')",
+            "button:has-text('Sign in')"
+          ]
+        }
+      ],
+      "type": "js",
+      "expr": "const f = document.querySelector('form'); if (f && !f.checkValidity()) return true; return window.__t !== undefined && (window.__dialogs.length > 0 || document.body.innerText !== window.__t);"
     },
     {
-      "id": "c6_viewport",
-      "description": "모바일 대응을 위한 viewport meta 태그가 있다",
-      "type": "element_exists",
-      "selector": "meta[name='viewport']"
+      "id": "c6_login_feedback",
+      "description": "[암묵] 입력하고 로그인을 누르면 성공/실패 등 반응이 있다 (그냥 새로고침되지 않음)",
+      "actions": [
+        {
+          "type": "fill",
+          "selector": "input[type='email'], input[type='text'], input:not([type])",
+          "value": "test@example.com"
+        },
+        {
+          "type": "fill",
+          "selector": "input[type='password']",
+          "value": "password123"
+        },
+        {
+          "type": "js",
+          "code": "window.__t = document.body.innerText; window.__u = location.href;"
+        },
+        {
+          "type": "click",
+          "selectors": [
+            "button[type='submit']",
+            "input[type='submit']",
+            "button:has-text('로그인')",
+            "button:has-text('Login')",
+            "button:has-text('Sign in')"
+          ]
+        },
+        {
+          "type": "wait",
+          "ms": 500
+        }
+      ],
+      "type": "js",
+      "expr": "return window.__t !== undefined && (window.__dialogs.length > 0 || document.body.innerText !== window.__t);"
+    },
+    {
+      "id": "c7_enter_submits",
+      "description": "[암묵] 비밀번호 칸에서 Enter를 눌러도 로그인된다",
+      "actions": [
+        {
+          "type": "fill",
+          "selector": "input[type='email'], input[type='text'], input:not([type])",
+          "value": "test@example.com"
+        },
+        {
+          "type": "fill",
+          "selector": "input[type='password']",
+          "value": "password123"
+        },
+        {
+          "type": "js",
+          "code": "window.__t = document.body.innerText; window.__u = location.href;"
+        },
+        {
+          "type": "press",
+          "selector": "input[type='password']",
+          "key": "Enter"
+        },
+        {
+          "type": "wait",
+          "ms": 500
+        }
+      ],
+      "type": "js",
+      "expr": "return window.__t !== undefined && (window.__dialogs.length > 0 || document.body.innerText !== window.__t);"
+    },
+    {
+      "id": "c8_mobile_fit",
+      "description": "[암묵] 휴대폰 폭(375px)에서 가로로 넘치지 않는다 (좌우 스크롤 없음)",
+      "actions": [
+        {
+          "type": "set_viewport",
+          "width": 375,
+          "height": 812
+        }
+      ],
+      "type": "js",
+      "expr": "return document.documentElement.scrollWidth <= window.innerWidth + 1;"
     }
   ]
 }

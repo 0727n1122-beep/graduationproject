@@ -4,46 +4,315 @@
   "original_prompt": "계산기 하나 만들어줘 숫자 누르고 더하기 빼기 곱하기 나누기 되고 결과 보여지는 화면도 있어야 해",
   "checklist": [
     {
-      "id": "c1_display",
-      "description": "계산 결과를 보여주는 화면 영역이 있다",
-      "type": "any_of",
-      "checks": [
-        { "type": "element_exists", "selector": "input[readonly]" },
-        { "type": "element_exists", "selector": "[class*=display], [class*=screen], [class*=result]" }
-      ]
+      "id": "c1_add",
+      "description": "[명시] 7 + 8 = 을 누르면 15가 나온다",
+      "actions": [
+        {
+          "type": "click_text",
+          "texts": [
+            "7"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "+"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "8"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "="
+          ]
+        }
+      ],
+      "type": "text_or_value_regex",
+      "pattern": "(^|[^\\d.])15([^\\d.]|$)"
     },
     {
-      "id": "c2_number_buttons",
-      "description": "숫자/연산자를 누르는 버튼이 최소 10개 있다 (button 태그든 클릭 핸들러 달린 div든 구조 무관)",
-      "type": "any_of",
-      "checks": [
-        { "type": "element_count_min", "selector": "button", "min": 10 },
-        { "type": "element_count_min", "selector": "[onclick], [class*=btn], [class*=key]", "min": 10 }
-      ]
+      "id": "c2_multiply",
+      "description": "[명시] 6 × 7 = 을 누르면 42가 나온다",
+      "actions": [
+        {
+          "type": "click_text",
+          "texts": [
+            "6"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "×",
+            "*",
+            "x",
+            "X",
+            "✕"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "7"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "="
+          ]
+        }
+      ],
+      "type": "text_or_value_regex",
+      "pattern": "(^|[^\\d.])42([^\\d.]|$)"
     },
     {
-      "id": "c3_operators",
-      "description": "사칙연산 기호가 화면에 있다",
-      "type": "text_contains_any",
-      "texts": ["+", "-", "×", "÷", "*", "/"]
+      "id": "c3_divide",
+      "description": "[명시] 9 ÷ 4 = 을 누르면 2.25가 나온다",
+      "actions": [
+        {
+          "type": "click_text",
+          "texts": [
+            "9"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "÷",
+            "/"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "4"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "="
+          ]
+        }
+      ],
+      "type": "text_or_value_regex",
+      "pattern": "(^|[^\\d.])2\\.25([^\\d.]|$)"
     },
     {
-      "id": "c4_equals",
-      "description": "결과를 계산하는 '=' 표시가 있다",
-      "type": "text_contains_any",
-      "texts": ["="]
+      "id": "c4_multi_digit_chain",
+      "description": "[암묵] 두 자리 수와 연속 계산: 12 + 30 + 5 = 은 47",
+      "actions": [
+        {
+          "type": "click_text",
+          "texts": [
+            "1"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "2"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "+"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "3"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "0"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "+"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "5"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "="
+          ]
+        }
+      ],
+      "type": "text_or_value_regex",
+      "pattern": "(^|[^\\d.])47([^\\d.]|$)"
     },
     {
-      "id": "c5_clear",
-      "description": "초기화(C/AC/초기화) 버튼이 있다",
-      "type": "text_contains_any",
-      "texts": ["AC", "C", "초기화", "Clear"]
+      "id": "c5_float",
+      "description": "[암묵] 0.1 + 0.2 = 이 0.30000000000000004가 아니라 0.3으로 나온다",
+      "actions": [
+        {
+          "type": "click_text",
+          "texts": [
+            "0"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            ".",
+            "·"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "1"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "+"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "0"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            ".",
+            "·"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "2"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "="
+          ]
+        }
+      ],
+      "type": "text_or_value_regex",
+      "pattern": "(^|[^\\d.])0\\.3([^\\d.]|$)"
     },
     {
-      "id": "c6_viewport",
-      "description": "모바일 대응을 위한 viewport meta 태그가 있다",
-      "type": "element_exists",
-      "selector": "meta[name='viewport']"
+      "id": "c6_div_zero",
+      "description": "[암묵] 0으로 나누면 Infinity/NaN이나 틀린 값 대신 오류 안내가 나온다",
+      "actions": [
+        {
+          "type": "click_text",
+          "texts": [
+            "5"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "÷",
+            "/"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "0"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "="
+          ]
+        }
+      ],
+      "type": "js",
+      "expr": "const t = document.body.innerText + '\\n' + [...document.querySelectorAll('input, textarea, output')].map(e => e.value).join('\\n'); return !/Infinity|NaN|∞|undefined/.test(t) && (/오류|에러|error|불가|나눌 수 없|cannot|invalid|정의되지/i.test(t) || window.__dialogs.length > 0);"
+    },
+    {
+      "id": "c7_clear",
+      "description": "[암묵] 결과가 나온 뒤 C(초기화)를 누르면 지워진다",
+      "actions": [
+        {
+          "type": "click_text",
+          "texts": [
+            "7"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "+"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "8"
+          ]
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "="
+          ]
+        },
+        {
+          "type": "js",
+          "code": "const t = document.body.innerText + '\\n' + [...document.querySelectorAll('input, textarea, output')].map(e => e.value).join('\\n'); if (!/(^|[^\\d.])15([^\\d.]|$)/.test(t)) throw new Error('15가 안 보임');"
+        },
+        {
+          "type": "click_text",
+          "texts": [
+            "AC",
+            "C",
+            "CE",
+            "초기화",
+            "Clear",
+            "지우기"
+          ]
+        }
+      ],
+      "type": "not",
+      "check": {
+        "type": "text_or_value_regex",
+        "pattern": "(^|[^\\d.])15([^\\d.]|$)"
+      }
+    },
+    {
+      "id": "c8_mobile_fit",
+      "description": "[암묵] 휴대폰 폭(375px)에서 가로로 넘치지 않는다 (좌우 스크롤 없음)",
+      "actions": [
+        {
+          "type": "set_viewport",
+          "width": 375,
+          "height": 812
+        }
+      ],
+      "type": "js",
+      "expr": "return document.documentElement.scrollWidth <= window.innerWidth + 1;"
     }
   ]
 }

@@ -4,39 +4,107 @@
   "original_prompt": "블로그 글 목록 보여주는 페이지 만들어줘 제목이랑 날짜 간단한 요약 이렇게 쭉 나오면 좋겠어",
   "checklist": [
     {
-      "id": "c1_post_items",
-      "description": "글 항목이 최소 3개 반복돼 있다 (article/li 태그든 카드형 div든 구조 무관)",
+      "id": "c1_posts",
+      "description": "[명시] 글이 3개 이상 나열된다 (태그 구조 무관)",
       "type": "any_of",
       "checks": [
-        { "type": "element_count_min", "selector": "article, li", "min": 3 },
-        { "type": "element_count_min", "selector": "[class*=post], [class*=item], [class*=card], [class*=entry]", "min": 3 }
+        {
+          "type": "element_count_min",
+          "selector": "article, li",
+          "min": 3
+        },
+        {
+          "type": "element_count_min",
+          "selector": "[class*=post], [class*=item], [class*=card], [class*=entry]",
+          "min": 3
+        }
       ]
     },
     {
       "id": "c2_titles",
-      "description": "각 글의 제목 역할을 하는 요소가 최소 3개 있다",
+      "description": "[명시] 글 제목이 3개 이상 있다",
       "type": "any_of",
       "checks": [
-        { "type": "element_count_min", "selector": "h2, h3, h4", "min": 3 },
-        { "type": "element_count_min", "selector": "[class*=title]", "min": 3 }
+        {
+          "type": "element_count_min",
+          "selector": "h2, h3, h4",
+          "min": 3
+        },
+        {
+          "type": "element_count_min",
+          "selector": "[class*=title]",
+          "min": 3
+        }
       ]
     },
     {
-      "id": "c3_date",
-      "description": "날짜 표시가 있다",
-      "type": "text_regex",
-      "pattern": "\\d{4}[.\\-/]\\d{1,2}[.\\-/]\\d{1,2}|\\d{1,2}월\\s*\\d{1,2}일"
+      "id": "c3_dates",
+      "description": "[명시] 글마다 날짜가 있다 (3개 이상)",
+      "type": "text_regex_count_min",
+      "pattern": "\\d{4}\\s*[.\\-/년]\\s*\\d{1,2}\\s*[.\\-/월]\\s*\\d{1,2}|\\d{1,2}월\\s*\\d{1,2}일",
+      "min": 3
     },
     {
-      "id": "c4_summary_text",
-      "description": "각 글의 요약/본문 설명 텍스트가 최소 3개 있다",
+      "id": "c4_summaries",
+      "description": "[명시] 글마다 요약 문단이 있다 (3개 이상)",
       "type": "element_count_min",
       "selector": "p",
       "min": 3
     },
     {
-      "id": "c5_viewport",
-      "description": "모바일 대응을 위한 viewport meta 태그가 있다",
+      "id": "c5_newest_first",
+      "description": "[암묵] 최신 글이 위에 오도록 날짜순 정렬돼 있다",
+      "type": "js",
+      "expr": "const t = document.body.innerText, ds = []; for (const m of t.matchAll(/(\\d{4})\\s*[.\\-\\/년]\\s*(\\d{1,2})\\s*[.\\-\\/월]\\s*(\\d{1,2})/g)) ds.push(+m[1] * 10000 + +m[2] * 100 + +m[3]); return ds.length >= 3 && ds.every((d, i) => i === 0 || d <= ds[i - 1]);"
+    },
+    {
+      "id": "c6_click_title",
+      "description": "[암묵] 글 제목을 누르면 본문이 보이거나 펼쳐진다 ('상세 페이지로 이동합니다' 알림창만 뜨는 건 제외)",
+      "actions": [
+        {
+          "type": "js",
+          "code": "window.__t = document.body.innerText; window.__u = location.href;"
+        },
+        {
+          "type": "click",
+          "selectors": [
+            "article h2",
+            "article h3",
+            "[class*=post] [class*=title]",
+            "[class*=item] [class*=title]",
+            "[class*=card] [class*=title]",
+            "[class*=post] h2",
+            "[class*=item] h2",
+            "[class*=card] h2",
+            "[class*=post] h3",
+            "[class*=item] h3",
+            "[class*=card] h3"
+          ]
+        },
+        {
+          "type": "wait",
+          "ms": 500
+        }
+      ],
+      "type": "js",
+      "expr": "const broken = /ERR_FILE_NOT_FOUND|couldn.t be accessed|찾을 수 없/.test(document.body.innerText); const moved = window.__u === undefined && !location.href.endsWith('#'); return !broken && (moved || (window.__t !== undefined && document.body.innerText !== window.__t));"
+    },
+    {
+      "id": "c7_mobile_fit",
+      "description": "[암묵] 휴대폰 폭(375px)에서 가로로 넘치지 않는다 (좌우 스크롤 없음)",
+      "actions": [
+        {
+          "type": "set_viewport",
+          "width": 375,
+          "height": 812
+        }
+      ],
+      "type": "js",
+      "expr": "return document.documentElement.scrollWidth <= window.innerWidth + 1;"
+    },
+    {
+      "id": "c8_viewport",
+      "description": "[암묵] 휴대폰용 viewport meta 태그가 있다",
       "type": "element_exists",
       "selector": "meta[name='viewport']"
     }

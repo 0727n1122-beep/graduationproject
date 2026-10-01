@@ -5,45 +5,86 @@
   "checklist": [
     {
       "id": "c1_title",
-      "description": "요리 이름을 담는 제목(h1/h2)이 있다",
+      "description": "[명시] 요리 이름 제목(h1/h2)이 있다",
       "type": "element_count_min",
       "selector": "h1, h2",
       "min": 1
     },
     {
-      "id": "c2_ingredients_list",
-      "description": "재료 목록이 최소 3개 있다 (li 태그든 카드형 구조든 무관)",
+      "id": "c2_ingredients",
+      "description": "[명시] 재료가 3개 이상 나열된다",
       "type": "any_of",
       "checks": [
-        { "type": "element_count_min", "selector": "ul li, ol li", "min": 3 },
-        { "type": "element_count_min", "selector": "[class*=ingredient]", "min": 3 }
+        {
+          "type": "element_count_min",
+          "selector": "ul li, ol li",
+          "min": 3
+        },
+        {
+          "type": "element_count_min",
+          "selector": "[class*=ingredient]",
+          "min": 3
+        }
       ]
     },
     {
       "id": "c3_steps",
-      "description": "조리 순서를 나타내는 단계별 구조가 최소 2개 있다 (ol 태그든 번호 매긴 div든 구조 무관)",
+      "description": "[명시] 만드는 법이 순서대로 3단계 이상 있다",
       "type": "any_of",
       "checks": [
-        { "type": "element_exists", "selector": "ol" },
-        { "type": "text_regex", "pattern": "1\\s*단계|Step\\s*1|1\\.\\s" },
-        { "type": "element_count_min", "selector": "[class*=step]", "min": 2 }
+        {
+          "type": "element_count_min",
+          "selector": "ol li",
+          "min": 3
+        },
+        {
+          "type": "element_count_min",
+          "selector": "[class*=step]",
+          "min": 3
+        }
       ]
     },
     {
-      "id": "c4_image",
-      "description": "음식 사진을 위한 이미지 요소가 있다",
-      "type": "element_exists",
-      "selector": "img"
+      "id": "c4_photo_loaded",
+      "description": "[명시] 음식 사진이 실제로 보인다 (깨진 이미지가 아님)",
+      "actions": [
+        {
+          "type": "wait",
+          "ms": 2500
+        }
+      ],
+      "type": "js",
+      "expr": "return [...document.images].some(i => i.complete && i.naturalWidth > 50) || [...document.querySelectorAll('*')].some(e => /url\\(/.test(getComputedStyle(e).backgroundImage));"
     },
     {
-      "id": "c5_section_headings",
-      "description": "재료/만드는 법 등을 구분하는 소제목이 있다",
-      "type": "text_contains_any",
-      "texts": ["재료", "만드는 법", "조리법", "Ingredients", "Steps"]
+      "id": "c5_quantities",
+      "description": "[암묵] 재료에 분량(숫자+단위)이 적혀 있다 (3개 이상)",
+      "type": "text_regex_count_min",
+      "pattern": "\\d+(?:[./]\\d+)?\\s*(?:g|kg|ml|mL|L|컵|큰술|작은술|스푼|숟가락|개|알|장|쪽|모|줌|꼬집|T|t|tbsp|tsp|cup)",
+      "min": 3
     },
     {
-      "id": "c6_viewport",
-      "description": "모바일 대응을 위한 viewport meta 태그가 있다",
+      "id": "c6_time_servings",
+      "description": "[암묵] 조리 시간이나 몇 인분인지 나온다",
+      "type": "text_regex",
+      "pattern": "\\d+\\s*(?:분|시간|인분|min|serving)"
+    },
+    {
+      "id": "c7_mobile_fit",
+      "description": "[암묵] 휴대폰 폭(375px)에서 가로로 넘치지 않는다 (좌우 스크롤 없음)",
+      "actions": [
+        {
+          "type": "set_viewport",
+          "width": 375,
+          "height": 812
+        }
+      ],
+      "type": "js",
+      "expr": "return document.documentElement.scrollWidth <= window.innerWidth + 1;"
+    },
+    {
+      "id": "c8_viewport",
+      "description": "[암묵] 휴대폰용 viewport meta 태그가 있다",
       "type": "element_exists",
       "selector": "meta[name='viewport']"
     }

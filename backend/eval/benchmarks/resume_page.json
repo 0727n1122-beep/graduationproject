@@ -5,43 +5,26 @@
   "checklist": [
     {
       "id": "c1_heading",
-      "description": "페이지에 이름/직무 등을 담는 제목(h1 또는 h2)이 있다",
+      "description": "[명시] 이름/직무 등을 담는 제목(h1 또는 h2)이 있다",
       "type": "element_count_min",
       "selector": "h1, h2",
       "min": 1
     },
     {
-      "id": "c2_contact",
-      "description": "연락처(이메일 링크 또는 전화번호 패턴)가 하나 있다",
-      "type": "any_of",
-      "checks": [
-        {
-          "type": "element_exists",
-          "selector": "a[href^='mailto:']"
-        },
-        {
-          "type": "text_regex",
-          "pattern": "\\d{2,3}-\\d{3,4}-\\d{4}"
-        },
-        {
-          "type": "text_regex",
-          "pattern": "[\\w.+-]+@[\\w-]+\\.[\\w.-]+"
-        }
-      ]
+      "id": "c2_email",
+      "description": "[명시] 이메일 주소가 보인다",
+      "type": "text_regex",
+      "pattern": "[\\w.+-]+@[\\w-]+\\.[\\w.-]+"
     },
     {
-      "id": "c3_about",
-      "description": "자기소개/소개 등을 담은 문구가 본문에 있다",
-      "type": "text_contains_any",
-      "texts": [
-        "소개",
-        "About",
-        "자기소개"
-      ]
+      "id": "c3_phone",
+      "description": "[명시] 전화번호가 보인다",
+      "type": "text_regex",
+      "pattern": "0\\d{1,2}[-.\\s]?\\d{3,4}[-.\\s]?\\d{4}"
     },
     {
-      "id": "c4_list_items",
-      "description": "개인 프로젝트/경력 등 목록 항목이 최소 2개 이상 있다 (li 태그든 카드형 div든 구조 무관)",
+      "id": "c4_projects",
+      "description": "[명시] 프로젝트/경력 항목이 2개 이상 있다 (태그 구조 무관)",
       "type": "any_of",
       "checks": [
         {
@@ -62,8 +45,33 @@
       ]
     },
     {
-      "id": "c5_viewport",
-      "description": "모바일 대응을 위한 viewport meta 태그가 있다",
+      "id": "c5_mailto",
+      "description": "[암묵] 이메일을 누르면 메일 앱이 열린다 (mailto 링크)",
+      "type": "element_exists",
+      "selector": "a[href^='mailto:']"
+    },
+    {
+      "id": "c6_tel",
+      "description": "[암묵] 휴대폰에서 전화번호를 누르면 전화가 걸린다 (tel 링크)",
+      "type": "element_exists",
+      "selector": "a[href^='tel:']"
+    },
+    {
+      "id": "c7_mobile_fit",
+      "description": "[암묵] 휴대폰 폭(375px)에서 가로로 넘치지 않는다 (좌우 스크롤 없음)",
+      "actions": [
+        {
+          "type": "set_viewport",
+          "width": 375,
+          "height": 812
+        }
+      ],
+      "type": "js",
+      "expr": "return document.documentElement.scrollWidth <= window.innerWidth + 1;"
+    },
+    {
+      "id": "c8_viewport",
+      "description": "[암묵] 휴대폰용 viewport meta 태그가 있다",
       "type": "element_exists",
       "selector": "meta[name='viewport']"
     }
