@@ -42,7 +42,7 @@ import requests
 import anthropic
 from playwright.sync_api import sync_playwright
 
-from checks import run_check, run_setup_action
+from checks import grade_checklist, open_page
 from report import build_report
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
@@ -104,16 +104,12 @@ def generate_html(client: anthropic.Anthropic, prompt: str) -> tuple[str, dict]:
 def grade_html(html_path: Path, checklist: list[dict], setup_actions: list[dict] = None) -> dict:
     """체크리스트 채점 + 스크린샷. 스크린샷은 상호작용 전, 사용자가 처음 여는 화면 기준."""
     console_errors = []
-    item_results = []
     stem = html_path.stem
+    url = f"file://{html_path.resolve()}"
     screenshots = {"desktop": f"{stem}_desktop.png", "mobile": f"{stem}_mobile.png"}
     with sync_playwright() as pw:
         browser = pw.chromium.launch()
-        page = browser.new_page(viewport=DESKTOP_VIEWPORT)
-        page.on("console", lambda msg: console_errors.append(msg.text) if msg.type == "error" else None)
-        page.on("pageerror", lambda exc: console_errors.append(str(exc)))
-        page.goto(f"file://{html_path.resolve()}")
-        page.wait_for_timeout(500)  # JS onload/렌더링 여유
+        page = open_page(browser, url, DESKTOP_VIEWPORT, console_errors)
 
         page.screenshot(path=str(RESULTS_DIR / screenshots["desktop"]), full_page=True)
         page.set_viewport_size(MOBILE_VIEWPORT)
@@ -123,20 +119,9 @@ def grade_html(html_path: Path, checklist: list[dict], setup_actions: list[dict]
         page.set_viewport_size(DESKTOP_VIEWPORT)
         page.wait_for_timeout(200)
 
-        for action in setup_actions or []:
-            # 할 일 추가 후 체크박스가 생기는 등, 상호작용 후에만 나타나는 기능을
-            # 채점 전에 미리 실행해둠. 실패해도(셀렉터가 다를 수 있음) 채점 자체는 계속.
-            try:
-                run_setup_action(page, action)
-                page.wait_for_timeout(200)
-            except Exception as e:
-                console_errors.append(f"setup_action 실패 {action}: {e}")
-        for item in checklist:
-            try:
-                result = run_check(page, item)
-            except Exception as e:  # 체크 자체가 깨져도 파일럿 전체가 죽지 않게
-                result = {"passed": False, "detail": f"check error: {e}"}
-            item_results.append({"id": item["id"], "description": item["description"], **result})
+        item_results = grade_checklist(
+            browser, page, url, DESKTOP_VIEWPORT, checklist, setup_actions, console_errors
+        )
         browser.close()
     passed = sum(1 for r in item_results if r["passed"])
     return {

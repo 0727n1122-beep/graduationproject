@@ -4,47 +4,101 @@
   "original_prompt": "간단한 설문조사 폼 만들어줘 이름 적는 거랑 몇 가지 질문에 선택하는 거 있고 마지막에 제출 버튼 있으면 돼",
   "checklist": [
     {
-      "id": "c1_text_input",
-      "description": "이름 등을 적는 텍스트 입력창이 있다",
+      "id": "c1_name_input",
+      "description": "[명시] 이름을 적는 칸이 있다",
       "type": "element_exists",
       "selector": "input[type='text'], input:not([type])"
     },
     {
-      "id": "c2_choice_inputs",
-      "description": "선택형 질문(라디오 또는 체크박스)이 최소 2개 있다",
-      "type": "element_count_min",
-      "selector": "input[type='radio'], input[type='checkbox']",
-      "min": 2
+      "id": "c2_questions",
+      "description": "[명시] 선택형 질문이 2개 이상 있다",
+      "type": "js",
+      "expr": "const names = new Set([...document.querySelectorAll('input[type=radio], input[type=checkbox]')].map(e => e.name || e.id)); return names.size + document.querySelectorAll('select').length >= 2;"
     },
     {
-      "id": "c3_multiple_questions",
-      "description": "질문이 여러 개로 구분돼 있다",
+      "id": "c3_submit_button",
+      "description": "[명시] 제출 버튼이 있다",
       "type": "any_of",
       "checks": [
-        { "type": "element_count_min", "selector": "label", "min": 2 },
-        { "type": "element_count_min", "selector": "[class*=question]", "min": 2 }
+        {
+          "type": "element_exists",
+          "selector": "button[type='submit'], input[type='submit']"
+        },
+        {
+          "type": "text_contains_any",
+          "texts": [
+            "제출",
+            "Submit"
+          ]
+        }
       ]
     },
     {
-      "id": "c4_submit",
-      "description": "제출 버튼이 있다",
-      "type": "any_of",
-      "checks": [
-        { "type": "element_exists", "selector": "button[type='submit'], input[type='submit']" },
-        { "type": "text_contains_any", "texts": ["제출", "Submit"] }
-      ]
+      "id": "c4_label_clickable",
+      "description": "[암묵] 선택지 글자를 눌러도 선택된다 (모든 선택지에 label 연결)",
+      "type": "js",
+      "expr": "const els = [...document.querySelectorAll('input[type=radio], input[type=checkbox]')]; return els.length > 0 && els.every(e => e.labels && e.labels.length > 0);"
     },
     {
-      "id": "c5_form_tag",
-      "description": "form 태그로 감싸져 있다",
-      "type": "element_exists",
-      "selector": "form"
+      "id": "c5_blank_blocked",
+      "description": "[암묵] 아무것도 안 적고 제출하면 막히거나 안내가 나온다",
+      "actions": [
+        {
+          "type": "js",
+          "code": "window.__t = document.body.innerText; window.__had = /감사|제출되었|완료|접수되었|Thank|submitted|success/i.test(document.body.innerText);"
+        },
+        {
+          "type": "click",
+          "selectors": [
+            "button[type='submit']",
+            "input[type='submit']",
+            "button:has-text('제출')",
+            "button:has-text('Submit')",
+            "button"
+          ]
+        }
+      ],
+      "type": "js",
+      "expr": "const f = document.querySelector('form'); const invalid = f ? !f.checkValidity() : false; const reacted = window.__t !== undefined && (window.__dialogs.length > 0 || document.body.innerText !== window.__t); const success = window.__had === false && /감사|제출되었|완료|접수되었|Thank|submitted|success/i.test(document.body.innerText + ' ' + window.__dialogs.join(' ')); return (invalid || reacted) && !success;"
     },
     {
-      "id": "c6_viewport",
-      "description": "모바일 대응을 위한 viewport meta 태그가 있다",
-      "type": "element_exists",
-      "selector": "meta[name='viewport']"
+      "id": "c6_submit_success",
+      "description": "[암묵] 다 채워서 제출하면 '제출 완료/감사' 같은 확인이 나온다",
+      "actions": [
+        {
+          "type": "js",
+          "code": "const set = (e, v) => { e.value = v; e.dispatchEvent(new Event('input', {bubbles: true})); e.dispatchEvent(new Event('change', {bubbles: true})); }; document.querySelectorAll(\"input[type=text], input:not([type]), textarea\").forEach(e => set(e, '홍길동')); document.querySelectorAll('input[type=email]').forEach(e => set(e, 'test@example.com')); document.querySelectorAll('input[type=tel]').forEach(e => set(e, '010-1234-5678')); document.querySelectorAll('input[type=number]').forEach(e => set(e, e.min || '20')); const seen = new Set(); document.querySelectorAll('input[type=radio], input[type=checkbox]').forEach(e => { if (!seen.has(e.name || e.id)) { seen.add(e.name || e.id); e.checked = true; e.dispatchEvent(new Event('change', {bubbles: true})); } }); document.querySelectorAll('select').forEach(s => { const o = [...s.options].find(o => o.value); if (o) { s.value = o.value; s.dispatchEvent(new Event('change', {bubbles: true})); } }); window.__had = /감사|제출되었|완료|접수되었|Thank|submitted|success/i.test(document.body.innerText);"
+        },
+        {
+          "type": "click",
+          "selectors": [
+            "button[type='submit']",
+            "input[type='submit']",
+            "button:has-text('제출')",
+            "button:has-text('Submit')",
+            "button"
+          ]
+        },
+        {
+          "type": "wait",
+          "ms": 500
+        }
+      ],
+      "type": "js",
+      "expr": "return window.__had === false && /감사|제출되었|완료|접수되었|Thank|submitted|success/i.test(document.body.innerText + ' ' + window.__dialogs.join(' '));"
+    },
+    {
+      "id": "c7_mobile_fit",
+      "description": "[암묵] 휴대폰 폭(375px)에서 가로로 넘치지 않는다 (좌우 스크롤 없음)",
+      "actions": [
+        {
+          "type": "set_viewport",
+          "width": 375,
+          "height": 812
+        }
+      ],
+      "type": "js",
+      "expr": "return document.documentElement.scrollWidth <= window.innerWidth + 1;"
     }
   ]
 }

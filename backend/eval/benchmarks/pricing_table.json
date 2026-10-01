@@ -4,49 +4,125 @@
   "original_prompt": "우리 서비스 요금제 비교하는 표 같은거 만들어줘 무료 유료 이렇게 나뉘고 가격이랑 뭐 되는지 안되는지 표시되면 좋겠어",
   "checklist": [
     {
-      "id": "c1_multiple_plans",
-      "description": "요금제가 최소 2개 구분돼 보인다 (카드형 구조든 표 구조든 무관)",
+      "id": "c1_plans",
+      "description": "[명시] 요금제가 2개 이상 구분돼 있다",
       "type": "any_of",
       "checks": [
-        { "type": "element_count_min", "selector": "[class*=plan], [class*=card], [class*=tier]", "min": 2 },
-        { "type": "element_count_min", "selector": "table th", "min": 2 }
+        {
+          "type": "element_count_min",
+          "selector": "[class*=plan], [class*=card], [class*=tier]",
+          "min": 2
+        },
+        {
+          "type": "element_count_min",
+          "selector": "table th",
+          "min": 2
+        }
       ]
     },
     {
-      "id": "c2_price",
-      "description": "가격(원/₩/달러 또는 무료) 표시가 있다",
+      "id": "c2_free",
+      "description": "[명시] 무료 요금제가 표시된다",
       "type": "text_regex",
-      "pattern": "\\d{1,3}(,\\d{3})*\\s*원|₩\\s*\\d|\\$\\s*\\d|무료"
+      "pattern": "무료|Free|FREE|(^|[^\\d,])0\\s*원|₩\\s*0(?![\\d,])|\\$\\s*0(?![\\d.,])"
     },
     {
-      "id": "c3_feature_list",
-      "description": "제공 기능 목록이 최소 3개 있다",
+      "id": "c3_paid_price",
+      "description": "[명시] 유료 요금제의 가격(0이 아닌 금액)이 표시된다",
+      "type": "text_regex",
+      "pattern": "[1-9][\\d,]*\\s*원|₩\\s*[1-9]|\\$\\s*[1-9]"
+    },
+    {
+      "id": "c4_included_mark",
+      "description": "[명시] 되는 기능 표시가 있다",
       "type": "any_of",
       "checks": [
-        { "type": "element_count_min", "selector": "li", "min": 3 },
-        { "type": "element_count_min", "selector": "[class*=feature]", "min": 3 }
+        {
+          "type": "text_contains_any",
+          "texts": [
+            "✓",
+            "✔",
+            "☑",
+            "✅",
+            "가능",
+            "포함"
+          ]
+        },
+        {
+          "type": "element_count_min",
+          "selector": "[class*=check], [class*=yes], [class*=included], [class*=available]",
+          "min": 1
+        }
       ]
     },
     {
-      "id": "c4_check_mark",
-      "description": "가능/불가능을 나타내는 표시가 있다",
-      "type": "text_contains_any",
-      "texts": ["✓", "✔", "✗", "가능", "불가능", "O", "X"]
-    },
-    {
-      "id": "c5_cta_button",
-      "description": "가입/선택 버튼이 있다",
+      "id": "c5_excluded_mark",
+      "description": "[명시] 안 되는 기능 표시가 있다",
       "type": "any_of",
       "checks": [
-        { "type": "element_exists", "selector": "button" },
-        { "type": "text_contains_any", "texts": ["선택", "가입", "구독", "Choose", "Subscribe"] }
+        {
+          "type": "text_contains_any",
+          "texts": [
+            "✗",
+            "✘",
+            "×",
+            "✕",
+            "✖",
+            "❌",
+            "불가",
+            "미포함",
+            "제공 안"
+          ]
+        },
+        {
+          "type": "element_count_min",
+          "selector": "[class*=unavailable], [class*=disabled], [class*=cross], [class*=excluded], [class*=not-included], [class*=no-], [class*=x-icon], [class*=-x]",
+          "min": 1
+        }
       ]
     },
     {
-      "id": "c6_viewport",
-      "description": "모바일 대응을 위한 viewport meta 태그가 있다",
-      "type": "element_exists",
-      "selector": "meta[name='viewport']"
+      "id": "c6_cta",
+      "description": "[암묵] 요금제마다 선택/가입 버튼이 있다 (2개 이상)",
+      "type": "element_count_min",
+      "selector": "button, a[class*=btn], a[class*=button]",
+      "min": 2
+    },
+    {
+      "id": "c7_recommended",
+      "description": "[암묵] 추천/인기 요금제가 강조돼 있다 (배지 글자 또는 강조용 스타일)",
+      "type": "any_of",
+      "checks": [
+        {
+          "type": "text_contains_any",
+          "texts": [
+            "추천",
+            "인기",
+            "BEST",
+            "Best",
+            "Popular",
+            "POPULAR",
+            "Recommended"
+          ]
+        },
+        {
+          "type": "element_exists",
+          "selector": "[class*=popular], [class*=featured], [class*=recommend], [class*=highlight], [class*=best]"
+        }
+      ]
+    },
+    {
+      "id": "c8_mobile_fit",
+      "description": "[암묵] 휴대폰 폭(375px)에서 가로로 넘치지 않는다 (좌우 스크롤 없음)",
+      "actions": [
+        {
+          "type": "set_viewport",
+          "width": 375,
+          "height": 812
+        }
+      ],
+      "type": "js",
+      "expr": "return document.documentElement.scrollWidth <= window.innerWidth + 1;"
     }
   ]
 }

@@ -2,61 +2,206 @@
   "id": "todo_app",
   "name": "할 일 목록 앱",
   "original_prompt": "할 일 적어두는 거 하나 만들어줘 적고 체크하면 줄 긋히는 것처럼 되면 좋겠고 지우기도 되면 좋겠어",
-  "setup_actions": [
-    { "type": "fill", "selector": "input[type='text'], input:not([type])", "value": "우유 사기" },
-    { "type": "click", "selector": "button" },
-    { "type": "click", "selector": "input[type='checkbox']" }
-  ],
   "checklist": [
     {
-      "id": "c1_input",
-      "description": "할 일을 입력하는 입력창이 있다",
-      "type": "element_exists",
-      "selector": "input[type='text'], input:not([type])"
-    },
-    {
-      "id": "c2_add_button",
-      "description": "추가(등록) 버튼이 있다",
-      "type": "any_of",
-      "checks": [
-        { "type": "element_exists", "selector": "button" },
-        { "type": "text_contains_any", "texts": ["추가", "등록", "Add"] }
-      ]
-    },
-    {
-      "id": "c3_list",
-      "description": "할 일 목록을 담는 구조(li 태그든 카드형 div든 구조 무관)가 있다",
-      "type": "any_of",
-      "checks": [
-        { "type": "element_exists", "selector": "ul, ol" },
-        { "type": "element_count_min", "selector": "[class*=todo], [class*=task], [class*=item]", "min": 1 }
-      ]
-    },
-    {
-      "id": "c4_checkbox",
-      "description": "항목을 추가하면(setup_actions) 완료 체크용 체크박스가 생긴다",
-      "type": "element_exists",
-      "selector": "input[type='checkbox']"
-    },
-    {
-      "id": "c5_delete",
-      "description": "항목을 추가하면(setup_actions) 삭제 버튼/아이콘이 생긴다",
+      "id": "c1_add",
+      "description": "[명시] 할 일을 적고 추가 버튼을 누르면 목록에 나타난다",
+      "actions": [
+        {
+          "type": "fill",
+          "selector": "input[type='text'], input:not([type])",
+          "value": "우유 사기"
+        },
+        {
+          "type": "click",
+          "selectors": [
+            "button:has-text('추가')",
+            "button:has-text('등록')",
+            "button:has-text('Add')",
+            "button:has-text('+')",
+            "button[type='submit']",
+            "button"
+          ]
+        }
+      ],
       "type": "text_contains_any",
-      "texts": ["삭제", "지우기", "Delete", "×", "X"]
+      "texts": [
+        "우유 사기"
+      ]
     },
     {
-      "id": "c6_strike_style",
-      "description": "체크박스를 누르면(setup_actions) 실제로 취소선이 그어진다 (클래스/인라인/CSS 선택자 등 구현 방식 무관)",
+      "id": "c2_strike",
+      "description": "[명시] 체크하면 실제로 취소선이 그어진다",
+      "actions": [
+        {
+          "type": "fill",
+          "selector": "input[type='text'], input:not([type])",
+          "value": "우유 사기"
+        },
+        {
+          "type": "click",
+          "selectors": [
+            "button:has-text('추가')",
+            "button:has-text('등록')",
+            "button:has-text('Add')",
+            "button:has-text('+')",
+            "button[type='submit']",
+            "button"
+          ]
+        },
+        {
+          "type": "expect_text",
+          "text": "우유 사기"
+        },
+        {
+          "type": "click",
+          "selector": "input[type='checkbox']"
+        }
+      ],
       "type": "computed_style_any",
       "selector": "body *",
       "property": "text-decoration-line",
       "value": "line-through"
     },
     {
-      "id": "c7_viewport",
-      "description": "모바일 대응을 위한 viewport meta 태그가 있다",
-      "type": "element_exists",
-      "selector": "meta[name='viewport']"
+      "id": "c3_delete",
+      "description": "[명시] 삭제 버튼을 누르면 그 항목이 사라진다",
+      "actions": [
+        {
+          "type": "fill",
+          "selector": "input[type='text'], input:not([type])",
+          "value": "우유 사기"
+        },
+        {
+          "type": "click",
+          "selectors": [
+            "button:has-text('추가')",
+            "button:has-text('등록')",
+            "button:has-text('Add')",
+            "button:has-text('+')",
+            "button[type='submit']",
+            "button"
+          ]
+        },
+        {
+          "type": "expect_text",
+          "text": "우유 사기"
+        },
+        {
+          "type": "click",
+          "selectors": [
+            "button:has-text('삭제')",
+            "button:has-text('지우기')",
+            "button:has-text('Delete')",
+            "button:has-text('×')",
+            "button:has-text('✕')",
+            "button:has-text('🗑')",
+            "[class*=delete]",
+            "[class*=remove]"
+          ]
+        }
+      ],
+      "type": "not",
+      "check": {
+        "type": "text_contains_any",
+        "texts": [
+          "우유 사기"
+        ]
+      }
+    },
+    {
+      "id": "c4_enter",
+      "description": "[암묵] 버튼 대신 Enter 키로도 추가된다",
+      "actions": [
+        {
+          "type": "fill",
+          "selector": "input[type='text'], input:not([type])",
+          "value": "우유 사기"
+        },
+        {
+          "type": "press",
+          "selector": "input[type='text'], input:not([type])",
+          "key": "Enter"
+        }
+      ],
+      "type": "text_contains_any",
+      "texts": [
+        "우유 사기"
+      ]
+    },
+    {
+      "id": "c5_blank_rejected",
+      "description": "[암묵] 빈 칸(공백만)으로 추가하면 빈 항목이 생기지 않는다",
+      "actions": [
+        {
+          "type": "js",
+          "code": "window.__n = document.querySelectorAll('li, input[type=checkbox], [class*=todo-item], [class*=task-item]').length;"
+        },
+        {
+          "type": "fill",
+          "selector": "input[type='text'], input:not([type])",
+          "value": "   "
+        },
+        {
+          "type": "click",
+          "selectors": [
+            "button:has-text('추가')",
+            "button:has-text('등록')",
+            "button:has-text('Add')",
+            "button:has-text('+')",
+            "button[type='submit']",
+            "button"
+          ]
+        }
+      ],
+      "type": "js",
+      "expr": "return document.querySelectorAll('li, input[type=checkbox], [class*=todo-item], [class*=task-item]').length === window.__n;"
+    },
+    {
+      "id": "c6_persist",
+      "description": "[암묵] 새로고침해도 할 일이 남아 있다",
+      "actions": [
+        {
+          "type": "fill",
+          "selector": "input[type='text'], input:not([type])",
+          "value": "우유 사기"
+        },
+        {
+          "type": "click",
+          "selectors": [
+            "button:has-text('추가')",
+            "button:has-text('등록')",
+            "button:has-text('Add')",
+            "button:has-text('+')",
+            "button[type='submit']",
+            "button"
+          ]
+        },
+        {
+          "type": "expect_text",
+          "text": "우유 사기"
+        },
+        {
+          "type": "reload"
+        }
+      ],
+      "type": "text_contains_any",
+      "texts": [
+        "우유 사기"
+      ]
+    },
+    {
+      "id": "c7_mobile_fit",
+      "description": "[암묵] 휴대폰 폭(375px)에서 가로로 넘치지 않는다 (좌우 스크롤 없음)",
+      "actions": [
+        {
+          "type": "set_viewport",
+          "width": 375,
+          "height": 812
+        }
+      ],
+      "type": "js",
+      "expr": "return document.documentElement.scrollWidth <= window.innerWidth + 1;"
     }
   ]
 }
