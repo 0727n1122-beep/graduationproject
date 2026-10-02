@@ -191,6 +191,12 @@ def find_verbatim(snippet: str, prompt: str):
     return m.group(0) if m else None
 
 
+# "기본 동작: …" 추천은 프롬프트가 정한 6가지(데이터 유지/입력 검증/결과 안내/계산·금액/휴대폰/날짜)만 허용.
+# 모델이 "페이지 보기"처럼 그 밖의 항목을 지어내면 사용자 프롬프트에 엉뚱한 조건이 들어가므로 버린다.
+BASIC_BEHAVIOR_TOPICS = ("유지", "저장", "입력", "검증", "결과", "안내", "알림", "피드백",
+                         "계산", "예외", "쉼표", "금액", "휴대폰", "모바일", "반응형", "날짜", "시간")
+
+
 def format_source(chunks: list[dict]):
     """근거 청크(rag/chunks.json)를 issues[]/missing_constraints[]에 붙일 수 있는 형태로 변환.
     근거가 없으면 None(정직하게 인용 생략)."""
@@ -572,6 +578,8 @@ MISSING_CONSTRAINT는 issues 배열에 넣지 않는다. missing_constraints 배
     for mc in result.get("missing_constraints", []):
         if not mc.get("field"):
             continue  # field 없는 항목은 의미 없음, 드롭
+        if mc["field"].startswith("기본 동작") and not any(t in mc["field"] for t in BASIC_BEHAVIOR_TOPICS):
+            continue  # 정해진 6가지 밖의 임의 "기본 동작"은 드롭
 
         # id: 없거나 중복이면 백엔드가 새로 부여 (issues와 동일한 패턴, 접두사만 mc로 구분)
         # 접두사가 mc가 아닌 값(예: 모델이 i1을 뱉는 드리프트)도 재부여 — issues id와 섞이면 안 됨
