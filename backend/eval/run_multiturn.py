@@ -8,7 +8,8 @@ run_multiturn.py — 멀티턴 평가 (원본 vs Minifi 첨삭본)
 흐름 (스펙 × 조건 × 반복마다):
   1. 첫 요청
      - A: 원본 프롬프트 그대로
-     - B: /optimize 첨삭본. [입력 필요] 같은 빈칸이 있으면, 원래 요청만 아는 가상
+     - B: 화면에서 '전체 첨삭 반영'을 눌렀을 때의 최종 프롬프트(이슈 전부 적용 + high/rec 빠진 조건 켜짐,
+       minifi_apply.py). --b-mode rewrite면 백엔드 optimized_prompt. [입력 필요] 같은 빈칸이 있으면, 원래 요청만 아는 가상
        사용자(LLM)가 원래 의도 범위 안에서 채움 — 실제 서비스에서 사용자가 하는 일
   2. 생성 → 체크리스트 채점
   3. 실패 항목이 있으면, 그 항목들의 고정 불평 문장(스펙의 "complaint")을 묶어 다음
@@ -46,8 +47,9 @@ from run_pilot import (
     GEN_SYSTEM_PROMPT,
     RESULTS_DIR,
     build_anthropic_client,
-    call_optimize,
+    call_optimize_full,
     extract_html,
+    minifi_prompt,
 )
 
 OUT_DIR = RESULTS_DIR / "multiturn"
@@ -149,6 +151,8 @@ def main():
     parser.add_argument("specs", nargs="*", help="벤치마크 스펙 경로 (생략하면 benchmarks/ 전부)")
     parser.add_argument("--runs", type=int, default=1)
     parser.add_argument("--max-turns", type=int, default=5, help="첫 요청 포함 최대 생성 횟수")
+    parser.add_argument("--b-mode", choices=["applied", "rewrite"], default="applied",
+                        help="조건 B 첫 요청: applied=화면의 '전체 첨삭 반영' 결과(기본), rewrite=백엔드 optimized_prompt")
     args = parser.parse_args()
     if not ANTHROPIC_API_KEY:
         print("ANTHROPIC_API_KEY가 없음 — backend/.env 확인 필요", file=sys.stderr)
@@ -170,11 +174,13 @@ def main():
             print(f"\n=== {spec['name']} ({spec['id']}) — {args.runs}회, 최대 {args.max_turns}턴 ===")
             runs = []
             for r in range(1, args.runs + 1):
-                optimized = call_optimize(spec["original_prompt"])
-                filled, fill_usage = fill_placeholders(client, spec["original_prompt"], optimized)
+                data = call_optimize_full(spec["original_prompt"])
+                minifi = minifi_prompt(spec["original_prompt"], data, args.b_mode)
+                filled, fill_usage = fill_placeholders(client, spec["original_prompt"], minifi)
                 firsts = {"A_original": spec["original_prompt"], "B_minifi": filled}
-                run = {"run": r, "optimized_prompt": optimized, "filled_prompt": filled if fill_usage else None,
-                       "fill_usage": fill_usage, "conditions": {}}
+                run = {"run": r, "b_mode": args.b_mode, "optimized_prompt": data["optimized_prompt"], "minifi_prompt": minifi,
+                       "missing_constraints": data.get("missing_constraints"),
+                       "filled_prompt": filled if fill_usage else None, "fill_usage": fill_usage, "conditions": {}}
                 for cond in CONDITIONS:
                     conv = run_conversation(client, browser, spec, firsts[cond], f"{spec['id']}_{cond}_r{r}", args.max_turns)
                     run["conditions"][cond] = conv

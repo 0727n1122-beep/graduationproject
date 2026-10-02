@@ -47,7 +47,10 @@ python run_multiturn.py --runs 5 --max-turns 5            # 전부
 python run_multiturn.py --runs 5 benchmarks/todo_app.json  # 하나만
 ```
 
-1. 첫 요청: A는 원본, B는 `/optimize` 첨삭본. 첨삭본에 `[입력 필요]` 빈칸이 있으면 원래
+1. 첫 요청: A는 원본, B는 화면에서 "전체 첨삭 반영"을 눌렀을 때 사용자가 복사하는 최종 프롬프트
+   (이슈 수정문 전부 적용 + 확신도 high/rec인 빠진 조건을 `[조건] …`으로 덧붙임, `minifi_apply.py`가
+   프론트 `diagnosisEngine.ts`를 그대로 옮긴 것). `--b-mode rewrite`면 예전 방식인 백엔드 `optimized_prompt`
+   (모델이 따로 통째로 다시 쓴 문장, 2026-10-02 이전 실험)를 씀. 첨삭본에 `[입력 필요]` 빈칸이 있으면 원래
    요청만 아는 가상 사용자(LLM)가 원래 의도 범위 안에서 채움(실제 서비스에서 사용자가 하는 일).
    새 요구를 추가하지 않도록 지시하고, 채운 결과는 summary에 남겨 검토 가능.
 2. 생성 → 체크리스트 채점 → 실패 항목이 있으면 각 항목의 고정 불평 문장(`complaint`)을

@@ -44,6 +44,7 @@ import anthropic
 from playwright.sync_api import sync_playwright
 
 from checks import grade_checklist, open_page
+from minifi_apply import assemble_applied
 from report import build_report
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
@@ -81,7 +82,7 @@ def extract_html(text: str) -> str:
     return m.group(1).strip() if m else text.strip()
 
 
-def call_optimize(prompt: str, attempts: int = 3) -> str:
+def call_optimize_full(prompt: str, attempts: int = 3) -> dict:
     # /optimize는 모델 응답 JSON 파싱 실패 등으로 가끔 {"error": ...}를 돌려줌 — 실제 사용자도
     # "다시 시도"를 누르는 상황이라 몇 번 재시도하고, 그래도 안 되면 실행을 멈춤
     for i in range(attempts):
@@ -89,10 +90,18 @@ def call_optimize(prompt: str, attempts: int = 3) -> str:
         resp.raise_for_status()
         data = resp.json()
         if "optimized_prompt" in data:
-            return data["optimized_prompt"]
+            return data
         print(f"  /optimize 실패({i + 1}/{attempts}): {data.get('error')}")
         time.sleep(2)
     raise RuntimeError(f"/optimize가 {attempts}번 연속 실패: {data}")
+
+
+def minifi_prompt(original: str, data: dict, b_mode: str) -> str:
+    """조건 B로 보낼 첨삭 프롬프트.
+    applied: 화면에서 '전체 첨삭 반영'을 눌렀을 때 사용자가 복사하는 최종 프롬프트(제품과 동일)
+    rewrite: 백엔드 optimized_prompt(모델이 따로 통째로 다시 쓴 문장) — 2026-10-02 이전 실험 방식"""
+    return assemble_applied(original, data) if b_mode == "applied" else data["optimized_prompt"]
+
 
 
 def generate_html(client: anthropic.Anthropic, prompt: str) -> tuple[str, dict]:
@@ -167,7 +176,7 @@ def aggregate(runs: list[dict], checklist: list[dict]) -> dict:
     return agg
 
 
-def run_spec(spec_path: Path, client: anthropic.Anthropic, n_runs: int) -> dict:
+def run_spec(spec_path: Path, client: anthropic.Anthropic, n_runs: int, b_mode: str = "applied") -> dict:
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
     spec_id = spec["id"]
     print(f"\n=== {spec['name']} ({spec_id}) — {n_runs}회 ===")
@@ -175,7 +184,8 @@ def run_spec(spec_path: Path, client: anthropic.Anthropic, n_runs: int) -> dict:
     runs = []
     for r in range(1, n_runs + 1):
         print(f"  [run {r}/{n_runs}] /optimize 호출 중...")
-        prompts = {"A_original": spec["original_prompt"], "B_minifi": call_optimize(spec["original_prompt"])}
+        data = call_optimize_full(spec["original_prompt"])
+        prompts = {"A_original": spec["original_prompt"], "B_minifi": minifi_prompt(spec["original_prompt"], data, b_mode)}
         run_result = {"run": r, "conditions": {}}
         for cond_name in CONDITIONS:
             html, usage = generate_html(client, prompts[cond_name])
@@ -208,6 +218,8 @@ def main():
     parser = argparse.ArgumentParser(description="원본 vs Minifi 첨삭본 평가 파일럿")
     parser.add_argument("specs", nargs="*", help="벤치마크 스펙 경로 (생략하면 benchmarks/ 전부)")
     parser.add_argument("--runs", type=int, default=1, help="조건별 반복 생성 횟수 (비교 결론엔 5 이상 권장)")
+    parser.add_argument("--b-mode", choices=["applied", "rewrite"], default="applied",
+                        help="조건 B 프롬프트: applied=화면의 '전체 첨삭 반영' 결과(기본), rewrite=백엔드 optimized_prompt")
     args = parser.parse_args()
 
     if not ANTHROPIC_API_KEY:
@@ -227,7 +239,7 @@ def main():
         sys.exit(1)
 
     client = build_anthropic_client()
-    all_results = [run_spec(p, client, args.runs) for p in spec_paths]
+    all_results = [run_spec(p, client, args.runs, args.b_mode) for p in spec_paths]
 
     summary_path = RESULTS_DIR / "summary.json"
     summary_path.write_text(json.dumps(all_results, ensure_ascii=False, indent=2), encoding="utf-8")
