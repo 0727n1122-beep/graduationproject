@@ -129,6 +129,14 @@ export interface MissingOption {
   description?: string;
 }
 
+/** 기술 스택 추천(감지·추천)에 마우스를 올리면 보이는 설명 */
+export interface MissingRationale {
+  /** 추천한 기술이 무엇인지 (비개발자용 한 문장) */
+  what: string;
+  /** 다른 선택지보다 이 추천이 유리한 점 */
+  why: string;
+}
+
 /** 백엔드가 내려주는 누락 조건 원본 (missing_constraints[] 원소) */
 export interface MissingConstraint {
   id: string;
@@ -137,6 +145,8 @@ export interface MissingConstraint {
   suggested_value: string | null;
   suggested_phrase: string | null;
   options: MissingOption[] | null;
+  /** 기술 스택 선택 항목이고 확신도가 high/rec일 때만 있음. 이전에 저장된 기록에는 없을 수 있음 */
+  rationale?: MissingRationale | null;
   source?: SourceCitation[] | null;
 }
 
