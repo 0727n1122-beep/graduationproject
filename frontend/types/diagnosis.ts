@@ -125,6 +125,8 @@ export interface MissingOption {
   label: string;
   /** 이 옵션을 고르면 프롬프트에 삽입될 최종 문구. null이면 삽입 안 함("제한 없음" 등) */
   phrase: string | null;
+  /** 이 옵션의 장단점 설명(장점 1개+단점 1개, 1~2문장). 순수 취향 선택지 등 설명이 의미 없으면 빈 문자열이거나 없을 수 있음 */
+  description?: string;
 }
 
 /** 백엔드가 내려주는 누락 조건 원본 (missing_constraints[] 원소) */
