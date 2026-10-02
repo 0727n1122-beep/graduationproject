@@ -304,7 +304,8 @@ async def optimize(
       "confidence": "high | rec | low — 4장 기준 준수",
       "suggested_value": "짧은 값 (예: 'Python 3.12'). confidence가 low면 반드시 null",
       "suggested_phrase": "프롬프트에 그대로 삽입될 완성 문장 (예: 'Python 3.12로 작성해주세요.'). confidence가 low면 반드시 null",
-      "options": "confidence가 low일 때만: [{{\"label\": \"선택지 이름\", \"phrase\": \"프롬프트에 삽입될 문장 또는 null\", \"description\": \"장단점 설명(장점 1개+단점 1개, 1~2문장) 또는 빈 문자열\"}}, ...] 2~4개. high/rec는 null"
+      "options": "confidence가 low일 때만: [{{\"label\": \"선택지 이름\", \"phrase\": \"프롬프트에 삽입될 문장 또는 null\", \"description\": \"장단점 설명(장점 1개+단점 1개, 1~2문장) 또는 빈 문자열\"}}, ...] 2~4개. high/rec는 null",
+      "rationale": "confidence가 high/rec이고 field가 기술 스택(언어·프레임워크·데이터베이스·플랫폼) 선택일 때만: {{\"what\": \"추천한 기술이 무엇인지 비개발자용 한 문장\", \"why\": \"다른 선택지보다 이 추천이 유리한 점 1~2문장\"}}. 그 외(low 포함, 기술 스택이 아닌 조건)는 null"
     }}
   ]
 }}
@@ -398,6 +399,23 @@ MISSING_CONSTRAINT는 issues 배열에 넣지 않는다. missing_constraints 배
   high/rec는 suggested_value(짧은 값)와 suggested_phrase(완성 문장)를 반드시 채운다.
   low는 suggested_value/suggested_phrase를 절대 채우지 말고(null), options로 2~4개
   선택지를 제시한다. 확신 없는 값을 확정값처럼 제시하는 것은 "없는 조건 조작"이다.
+
+  [rationale — 추천한 기술이 무엇이고 왜 유리한지 (high/rec만)]
+  - field가 기술 스택(프로그래밍 언어, 프레임워크, 데이터베이스, 플랫폼 등) 선택이고
+    confidence가 high 또는 rec이면 rationale을 반드시 채운다. low이거나 기술 스택이
+    아닌 조건(날짜 형식, 출력 길이 등)은 null. 사용자가 화면에서 추천 문장에 마우스를
+    올리면 이 내용이 보인다.
+  - what: suggested_value가 무엇인지 비개발자가 이해하는 평이한 한 문장. 전문 용어는
+    괄호로 짧게 풀이한다. (예: "HTML/CSS/JavaScript — 웹페이지의 뼈대·모양·동작을 각각
+    맡는 브라우저 기본 기술")
+  - why: 다른 선택지 중 하나 이상을 이름으로 들어 "~보다 ~해서 유리함"처럼 비교한다.
+    이 요청의 맥락(비개발자, 간단한 결과물 등)에 맞는 이유로 쓰고, 이 선택이 불리해지는
+    경우도 한마디 덧붙인다. 1~2문장.
+  - 문장 끝은 화면의 다른 안내와 맞춰 "~해요/~이에요" 체로 통일한다.
+  - 한계는 "~할 때는 다른 선택이 나아요"처럼 구체적인 상황 하나로만 쓴다. "필요에 따라
+    선택할 수 있다"처럼 추천 자체를 스스로 무르는 마무리는 금지.
+  - 금지: suggested_value와 다른 기술을 설명하기, 근거 없는 수치("30% 빠름" 등),
+    대안을 일방적으로 깎아내리기. 원문에 단서가 있어 high인 경우엔 그 단서를 근거로 든다.
 
   [options 옵션별 장단점 설명 규칙]
   - field가 기술 스택/플랫폼/언어 선택에 해당하면(프레임워크, 프로그래밍 언어,
@@ -570,6 +588,13 @@ MISSING_CONSTRAINT는 issues 배열에 넣지 않는다. missing_constraints 배
             mc["suggested_phrase"] = None
         else:
             mc.setdefault("options", None)
+
+        # rationale(기술 스택 추천 설명): low이거나 what/why 둘 중 하나라도 비면 버림 —
+        # 반쪽짜리 설명을 툴팁으로 보여주느니 안 보여주는 게 낫다
+        rationale = mc.get("rationale")
+        what = str(rationale.get("what") or "").strip() if isinstance(rationale, dict) else ""
+        why = str(rationale.get("why") or "").strip() if isinstance(rationale, dict) else ""
+        mc["rationale"] = {"what": what, "why": why} if confidence != "low" and what and why else None
 
         mc["confidence"] = confidence
         rag_queries.append(("MISSING_CONSTRAINT", f"{mc['field']} {mc.get('suggested_phrase') or ''}"))
