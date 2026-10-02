@@ -1,0 +1,46 @@
+{
+  "id": "login_form",
+  "name": "로그인 폼",
+  "original_prompt": "로그인 화면 만들어줘 아이디 비번 입력하고 로그인 버튼 있으면 되고 회원가입 링크도 하나 있으면 좋겠어",
+  "checklist": [
+    {
+      "id": "c1_username",
+      "description": "아이디/이메일 입력창이 있다",
+      "type": "element_exists",
+      "selector": "input[type='text'], input[type='email'], input:not([type])"
+    },
+    {
+      "id": "c2_password",
+      "description": "비밀번호 입력창이 있다",
+      "type": "element_exists",
+      "selector": "input[type='password']"
+    },
+    {
+      "id": "c3_login_button",
+      "description": "로그인 버튼이 있다",
+      "type": "any_of",
+      "checks": [
+        { "type": "element_exists", "selector": "button[type='submit']" },
+        { "type": "text_contains_any", "texts": ["로그인", "Login", "Sign in"] }
+      ]
+    },
+    {
+      "id": "c4_signup_link",
+      "description": "회원가입 관련 링크/텍스트가 있다",
+      "type": "text_contains_any",
+      "texts": ["회원가입", "가입하기", "Sign up"]
+    },
+    {
+      "id": "c5_form_tag",
+      "description": "form 태그로 감싸져 있다",
+      "type": "element_exists",
+      "selector": "form"
+    },
+    {
+      "id": "c6_viewport",
+      "description": "모바일 대응을 위한 viewport meta 태그가 있다",
+      "type": "element_exists",
+      "selector": "meta[name='viewport']"
+    }
+  ]
+}
