@@ -706,18 +706,27 @@ function MissRow({
               {badgeTxt}
             </span>
           </div>
-          <div className="mt-2 flex flex-wrap gap-1.5">
+          <div className="mt-2 flex flex-col gap-1.5">
             {(m.options ?? []).map((o, oi) => (
               <button
                 key={oi}
                 onClick={() => onPickOption(m.id, oi)}
-                className={`rounded-[7px] border px-2.5 py-1 text-[11.5px] font-semibold transition-colors ${
+                className={`rounded-[8px] border px-2.5 py-1.5 text-left transition-colors ${
                   m.selectedOption === oi
-                    ? "border-[#00C9C8] bg-[#00C9C8] text-white"
-                    : "border-[#E4E8EE] bg-white text-[#5C6773] hover:border-[#00C9C8]"
+                    ? "border-[#00C9C8] bg-[#E9FBFA]"
+                    : "border-[#E4E8EE] bg-white hover:border-[#00C9C8]"
                 }`}
               >
-                {o.label}
+                <span
+                  className={`text-[11.5px] font-semibold ${
+                    m.selectedOption === oi ? "text-[#0891B2]" : "text-[#5C6773]"
+                  }`}
+                >
+                  {o.label}
+                </span>
+                {o.description && (
+                  <p className="mt-0.5 text-[11px] leading-snug text-[#9AA4B0]">{o.description}</p>
+                )}
               </button>
             ))}
           </div>
