@@ -76,6 +76,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── 임시 디버그용 (CORS 문제 진단 후 제거 예정) ──────────────
+# ALLOWED_ORIGINS는 민감정보가 아니라 애초에 응답 헤더로 브라우저에 그대로 노출되는
+# 값이라, 서버가 실제로 어떤 값을로 계산했는지 바로 확인하기 위한 용도.
+@app.get("/debug/cors")
+def debug_cors():
+    return {
+        "raw_env": _raw_origins,
+        "computed_allowed_origins": ALLOWED_ORIGINS,
+        "is_wildcard": _is_wildcard_origin,
+    }
+
 # ── 라우터 등록 ────────────────────────────────────────────
 app.include_router(auth_router)       # /auth/register, /auth/login 등
 app.include_router(history_router)    # /history
