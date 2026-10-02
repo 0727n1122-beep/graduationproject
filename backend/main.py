@@ -41,12 +41,25 @@ from rag.retrieve import retrieve_batch
 app = FastAPI()
 
 # ── CORS 설정 ──────────────────────────────────────────────
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
+# ALLOWED_ORIGINS가 "*"(와일드카드)인 채로 allow_credentials=True를 쓰면,
+# Fetch 표준상 "와일드카드 + 자격증명 허용" 조합이 금지되어 있어서
+# CORSMiddleware가 브라우저의 preflight(OPTIONS) 요청에 Access-Control-Allow-Origin
+# 헤더를 내려주지 않음 → 프론트에서 JSON POST 같은 요청이 전부
+# "서버에 연결할 수 없어요" / TypeError: Failed to fetch 로 막히는 문제가 있었음.
+# (Swagger 테스트나 단순 GET은 영향이 없어서 겉으로는 "서버는 멀쩡해 보이는데
+#  프론트에서만 실패"하는 것처럼 보였음)
+#
+# → ALLOWED_ORIGINS를 실제 프론트 도메인으로 명시하면 credentials 허용,
+#   아직 기본값("*")으로 남아있으면 credentials는 끄고 와일드카드만 허용해서
+#   최소한 요청 자체는 막히지 않도록 방어.
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "*")
+ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+_is_wildcard_origin = ALLOWED_ORIGINS == ["*"]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_credentials=not _is_wildcard_origin,
     allow_methods=["*"],
     allow_headers=["*"],
 )
