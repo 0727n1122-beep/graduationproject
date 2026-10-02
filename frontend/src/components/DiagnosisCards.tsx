@@ -684,6 +684,8 @@ function MissRow({
   onPickOption: (id: string, oi: number) => void;
 }) {
   const badgeTxt = m.confidence === "high" ? "감지" : m.confidence === "rec" ? "추천" : "선택";
+  // 사용자가 추천 문장을 직접 고쳤다면 설명이 더 이상 그 문장에 대한 것이 아니므로 숨김
+  const showRationale = !!m.rationale && m.phrase === m.suggested_phrase;
   const badgeColor =
     m.confidence === "high"
       ? "bg-[#DFF3EA] text-[#0B8564]"
@@ -732,11 +734,33 @@ function MissRow({
           </div>
         </>
       ) : (
-        <div className="flex items-center gap-2.5 pr-9">
+        <div className="group/rat relative flex items-center gap-2.5 pr-9">
           <span className="flex-none text-[12.5px] font-extrabold whitespace-nowrap text-[#182430]">{m.field}</span>
           <span className={`flex-none rounded px-1.5 py-0.5 font-mono text-[9px] font-extrabold tracking-wide uppercase ${badgeColor}`}>
             {badgeTxt}
           </span>
+          {showRationale && (
+            <>
+              <span aria-hidden className="flex-none cursor-default font-mono text-[11px] font-extrabold text-[#9AA4B0] group-hover/rat:text-[#0891B2]">
+                ⓘ
+              </span>
+              <div
+                role="tooltip"
+                className="invisible absolute top-full left-0 z-30 mt-1.5 flex w-[330px] max-w-full flex-col gap-2 rounded-lg border border-[#E4E8EE] bg-white px-3 py-2.5 opacity-0 shadow-[0_12px_30px_rgba(15,18,24,0.14)] transition-opacity group-hover/rat:visible group-hover/rat:opacity-100"
+              >
+                <div>
+                  <div className="mb-0.5 font-mono text-[9px] font-extrabold tracking-wide text-[#5E4FB8] uppercase">이게 뭐예요</div>
+                  <p className="text-[11.5px] leading-[1.5] text-[#5C6773]">{m.rationale?.what}</p>
+                </div>
+                <div>
+                  <div className="mb-0.5 font-mono text-[9px] font-extrabold tracking-wide text-[#0B8564] uppercase">
+                    다른 선택지보다 유리한 점
+                  </div>
+                  <p className="text-[11.5px] leading-[1.5] text-[#5C6773]">{m.rationale?.why}</p>
+                </div>
+              </div>
+            </>
+          )}
           <div className="relative flex-1">
             <input
               value={m.phrase ?? ""}
