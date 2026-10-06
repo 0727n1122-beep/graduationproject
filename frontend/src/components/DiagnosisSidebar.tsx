@@ -3,7 +3,6 @@
 // ============================================================
 // DiagnosisSidebar.tsx — 앱 좌측 레일 네비게이션.
 // docs/minifi-diagnosis-mockup-v4_1.html의 .rail을 그대로 이식 (아쿠아블루 테마).
-// 마이페이지는 아직 페이지가 없어서 버튼만 있고 이동은 하지 않음.
 // ============================================================
 
 import type { ReactNode } from "react";
@@ -25,7 +24,12 @@ const NAV_ITEMS: NavItem[] = [
     label: "첨삭하기",
     href: "/diagnose",
     icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
         <path d="M4 19l4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 19Z" />
       </svg>
     ),
@@ -35,7 +39,12 @@ const NAV_ITEMS: NavItem[] = [
     label: "히스토리",
     href: "/history",
     icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
         <circle cx="12" cy="12" r="8.2" />
         <path d="M12 7.5V12l3 2" />
       </svg>
@@ -44,8 +53,14 @@ const NAV_ITEMS: NavItem[] = [
   {
     view: "mypage",
     label: "마이페이지",
+    href: "/mypage",
     icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
         <circle cx="12" cy="8.5" r="3.4" />
         <path d="M4.8 19.5c1.4-3.4 4-5 7.2-5s5.8 1.6 7.2 5" />
       </svg>
@@ -80,11 +95,22 @@ export default function DiagnosisSidebar({
               : "text-[#8892A3] hover:bg-[#232D3A] hover:text-white",
           ].join(" ");
           return item.href ? (
-            <Link key={item.view} href={item.href} title={item.label} onClick={() => onNavigate?.(item.view)} className={className}>
+            <Link
+              key={item.view}
+              href={item.href}
+              title={item.label}
+              onClick={() => onNavigate?.(item.view)}
+              className={className}
+            >
               {item.icon}
             </Link>
           ) : (
-            <button key={item.view} title={item.label} onClick={() => onNavigate?.(item.view)} className={className}>
+            <button
+              key={item.view}
+              title={item.label}
+              onClick={() => onNavigate?.(item.view)}
+              className={className}
+            >
               {item.icon}
             </button>
           );
