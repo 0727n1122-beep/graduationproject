@@ -11,7 +11,6 @@
 // ============================================================
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import DiagnosisCards from "@/src/components/DiagnosisCards";
 import DiagnosisSidebar from "@/src/components/DiagnosisSidebar";
@@ -25,8 +24,9 @@ interface ViewPayload {
 }
 
 export default function HistoryViewPage() {
-  const router = useRouter();
-  const [payload, setPayload] = useState<ViewPayload | null | undefined>(undefined);
+  const [payload, setPayload] = useState<ViewPayload | null | undefined>(
+    undefined,
+  );
   // sessionStorage는 한 번 읽으면 지우는 일회성 소비라, StrictMode 개발 모드가
   // effect를 두 번 실행하면 두 번째 실행에서 이미 지워진 값을 읽어 항상 실패함 —
   // ref로 실제 소비는 최초 1회만 일어나도록 막음(state는 StrictMode의 재실행
@@ -52,13 +52,7 @@ export default function HistoryViewPage() {
 
   return (
     <div className="flex min-h-screen bg-[#F5F7F9]">
-      <DiagnosisSidebar
-        active="history"
-        onNavigate={(view) => {
-          if (view === "diagnosis") router.push("/diagnose");
-          if (view === "mypage") router.push("/mypage");
-        }}
-      />
+      <DiagnosisSidebar active="history" />
       <main className="flex-1 p-9">
         <div className="max-w-[1240px]">
           {payload === undefined ? null : payload === null ? (
