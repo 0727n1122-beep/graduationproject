@@ -36,6 +36,10 @@ python run_pilot.py benchmarks/resume_page.json   # 하나만
   "id": "todo_app",
   "name": "할 일 목록 앱",
   "original_prompt": "비개발자 말투로 쓴 원본 프롬프트",
+  "setup_actions": [
+    { "type": "fill", "selector": "input[type='text']", "value": "테스트 항목" },
+    { "type": "click", "selector": "button" }
+  ],
   "checklist": [
     { "id": "c1", "description": "...", "type": "element_count_min", "selector": "li", "min": 1 }
   ]
@@ -43,8 +47,17 @@ python run_pilot.py benchmarks/resume_page.json   # 하나만
 ```
 
 체크 타입은 `checks.py` 참고 (`element_exists` / `element_count_min` /
-`text_contains_any` / `text_regex` / `any_of`).
+`text_contains_any` / `text_regex` / `text_regex_count_min` / `any_of`).
+`text_contains_any`/`text_regex`는 **렌더링된 본문 텍스트만** 봄 —
+`<style>`/`<script>` 내용이나 `placeholder` 같은 HTML 속성은 거기 안 잡히니,
+그런 건 `element_exists`를 CSS 속성 선택자(`input[placeholder]`,
+`[style*='line-through']`)로 써서 체크할 것.
 
-나현이가 만든 벤치마크 스펙(이력서 페이지 등)이 나오면 이 형식으로 옮겨서
-`benchmarks/`에 추가하면 됨 — `resume_page.json`은 실제 스펙 나오기 전까지
-파이프라인 자체를 테스트해보기 위한 임시 스펙임.
+`setup_actions`(선택)는 할 일 추가 후에만 체크박스/삭제 버튼이 생기는 앱처럼,
+상호작용을 해야만 나타나는 기능을 채점 전에 미리 실행해둠(`fill`/`click`/`press`).
+없으면 로드된 그대로(상호작용 없이) 채점.
+
+나현이가 만든 벤치마크 스펙 10개(`resume_page`, `chatbot_ui`, `todo_app`,
+`calculator`, `weather_widget`, `recipe_card`, `survey_form`, `pricing_table`,
+`blog_list`, `login_form`)가 `benchmarks/`에 들어있음. 전부 실제 Claude 생성
+HTML로 한 번씩 돌려서 체크리스트가 합리적으로 통과/실패하는지 확인함.
