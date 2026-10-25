@@ -1,0 +1,63 @@
+{
+  "id": "todo_app",
+  "name": "할 일 목록 앱",
+  "original_prompt": "할 일 적어두는 거 하나 만들어줘 적고 체크하면 줄 긋히는 것처럼 되면 좋겠고 지우기도 되면 좋겠어",
+  "setup_actions": [
+    { "type": "fill", "selector": "input[type='text'], input:not([type])", "value": "우유 사기" },
+    { "type": "click", "selector": "button" },
+    { "type": "click", "selector": "input[type='checkbox']" }
+  ],
+  "checklist": [
+    {
+      "id": "c1_input",
+      "description": "할 일을 입력하는 입력창이 있다",
+      "type": "element_exists",
+      "selector": "input[type='text'], input:not([type])"
+    },
+    {
+      "id": "c2_add_button",
+      "description": "추가(등록) 버튼이 있다",
+      "type": "any_of",
+      "checks": [
+        { "type": "element_exists", "selector": "button" },
+        { "type": "text_contains_any", "texts": ["추가", "등록", "Add"] }
+      ]
+    },
+    {
+      "id": "c3_list",
+      "description": "할 일 목록을 담는 구조(li 태그든 카드형 div든 구조 무관)가 있다",
+      "type": "any_of",
+      "checks": [
+        { "type": "element_exists", "selector": "ul, ol" },
+        { "type": "element_count_min", "selector": "[class*=todo], [class*=task], [class*=item]", "min": 1 }
+      ]
+    },
+    {
+      "id": "c4_checkbox",
+      "description": "항목을 추가하면(setup_actions) 완료 체크용 체크박스가 생긴다",
+      "type": "element_exists",
+      "selector": "input[type='checkbox']"
+    },
+    {
+      "id": "c5_delete",
+      "description": "항목을 추가하면(setup_actions) 삭제 버튼/아이콘이 생긴다",
+      "type": "text_contains_any",
+      "texts": ["삭제", "지우기", "Delete", "×", "X"]
+    },
+    {
+      "id": "c6_strike_style",
+      "description": "체크박스를 누르면(setup_actions) 완료 표시(취소선 스타일 또는 완료 클래스)가 적용된다",
+      "type": "any_of",
+      "checks": [
+        { "type": "element_exists", "selector": "[style*='line-through']" },
+        { "type": "element_count_min", "selector": "[class*=complete], [class*=done], [class*=checked], [class*=finished]", "min": 1 }
+      ]
+    },
+    {
+      "id": "c7_viewport",
+      "description": "모바일 대응을 위한 viewport meta 태그가 있다",
+      "type": "element_exists",
+      "selector": "meta[name='viewport']"
+    }
+  ]
+}

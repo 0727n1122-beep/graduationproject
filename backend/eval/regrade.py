@@ -15,19 +15,25 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-from checks import run_check
+from checks import run_check, run_setup_action
 
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
 BENCH_DIR = Path(__file__).resolve().parent / "benchmarks"
 
 
-def grade_html(page, html_path: Path, checklist: list[dict]) -> dict:
+def grade_html(page, html_path: Path, checklist: list[dict], setup_actions: list[dict] = None) -> dict:
     console_errors = []
     item_results = []
     page.on("console", lambda msg: console_errors.append(msg.text) if msg.type == "error" else None)
     page.on("pageerror", lambda exc: console_errors.append(str(exc)))
     page.goto(f"file://{html_path.resolve()}")
     page.wait_for_timeout(500)
+    for action in setup_actions or []:
+        try:
+            run_setup_action(page, action)
+            page.wait_for_timeout(200)
+        except Exception as e:
+            console_errors.append(f"setup_action 실패 {action}: {e}")
     for item in checklist:
         try:
             result = run_check(page, item)
@@ -61,7 +67,7 @@ def main():
             for html_path in html_files:
                 cond = html_path.stem[len(spec_id) + 1:]
                 page = browser.new_page()
-                grading = grade_html(page, html_path, spec["checklist"])
+                grading = grade_html(page, html_path, spec["checklist"], spec.get("setup_actions"))
                 page.close()
                 fails = [it["id"] for it in grading["items"] if not it["passed"]]
                 print(

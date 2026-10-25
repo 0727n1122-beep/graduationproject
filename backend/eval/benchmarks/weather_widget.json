@@ -1,0 +1,46 @@
+{
+  "id": "weather_widget",
+  "name": "날씨 위젯",
+  "original_prompt": "날씨 보여주는 화면 만들어줘 오늘 온도랑 뭐 흐림 맑음 이런거 아이콘도 있으면 좋겠고 일주일치도 쭉 나오면 좋겠어",
+  "checklist": [
+    {
+      "id": "c1_temperature",
+      "description": "온도를 나타내는 표시(숫자+도 단위)가 있다",
+      "type": "text_regex",
+      "pattern": "\\d{1,3}\\s*(°|도)"
+    },
+    {
+      "id": "c2_condition_text",
+      "description": "날씨 상태를 나타내는 단어가 있다",
+      "type": "text_contains_any",
+      "texts": ["맑음", "흐림", "비", "눈", "구름", "Sunny", "Cloudy", "Rain"]
+    },
+    {
+      "id": "c3_icon",
+      "description": "날씨 아이콘 요소(이미지/SVG/아이콘 클래스/이모지)가 있다",
+      "type": "any_of",
+      "checks": [
+        { "type": "element_exists", "selector": "img" },
+        { "type": "element_exists", "selector": "svg" },
+        { "type": "element_exists", "selector": "[class*=icon]" },
+        { "type": "text_regex", "pattern": "[\\u2600-\\u26FF\\u2700-\\u27BF\\uD83C-\\uDBFF\\uDC00-\\uDFFF]" }
+      ]
+    },
+    {
+      "id": "c4_forecast_list",
+      "description": "여러 날짜의 예보를 담는 반복 구조가 최소 5개 있다 (태그/클래스 구조 무관)",
+      "type": "any_of",
+      "checks": [
+        { "type": "element_count_min", "selector": "li", "min": 5 },
+        { "type": "element_count_min", "selector": "[class*=day], [class*=forecast]", "min": 5 },
+        { "type": "text_regex_count_min", "pattern": "월|화|수|목|금|토|일", "min": 5 }
+      ]
+    },
+    {
+      "id": "c6_viewport",
+      "description": "모바일 대응을 위한 viewport meta 태그가 있다",
+      "type": "element_exists",
+      "selector": "meta[name='viewport']"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "id": "recipe_card",
+  "name": "레시피 카드",
+  "original_prompt": "요리 레시피 보여주는 페이지 만들어줘 재료 쭉 나오고 순서대로 만드는 법도 나오면 좋겠어 사진도 들어가면 좋고",
+  "checklist": [
+    {
+      "id": "c1_title",
+      "description": "요리 이름을 담는 제목(h1/h2)이 있다",
+      "type": "element_count_min",
+      "selector": "h1, h2",
+      "min": 1
+    },
+    {
+      "id": "c2_ingredients_list",
+      "description": "재료 목록이 최소 3개 있다 (li 태그든 카드형 구조든 무관)",
+      "type": "any_of",
+      "checks": [
+        { "type": "element_count_min", "selector": "ul li, ol li", "min": 3 },
+        { "type": "element_count_min", "selector": "[class*=ingredient]", "min": 3 }
+      ]
+    },
+    {
+      "id": "c3_steps",
+      "description": "조리 순서를 나타내는 단계별 구조가 최소 2개 있다 (ol 태그든 번호 매긴 div든 구조 무관)",
+      "type": "any_of",
+      "checks": [
+        { "type": "element_exists", "selector": "ol" },
+        { "type": "text_regex", "pattern": "1\\s*단계|Step\\s*1|1\\.\\s" },
+        { "type": "element_count_min", "selector": "[class*=step]", "min": 2 }
+      ]
+    },
+    {
+      "id": "c4_image",
+      "description": "음식 사진을 위한 이미지 요소가 있다",
+      "type": "element_exists",
+      "selector": "img"
+    },
+    {
+      "id": "c5_section_headings",
+      "description": "재료/만드는 법 등을 구분하는 소제목이 있다",
+      "type": "text_contains_any",
+      "texts": ["재료", "만드는 법", "조리법", "Ingredients", "Steps"]
+    },
+    {
+      "id": "c6_viewport",
+      "description": "모바일 대응을 위한 viewport meta 태그가 있다",
+      "type": "element_exists",
+      "selector": "meta[name='viewport']"
+    }
+  ]
+}

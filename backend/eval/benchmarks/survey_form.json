@@ -1,0 +1,50 @@
+{
+  "id": "survey_form",
+  "name": "설문조사 폼",
+  "original_prompt": "간단한 설문조사 폼 만들어줘 이름 적는 거랑 몇 가지 질문에 선택하는 거 있고 마지막에 제출 버튼 있으면 돼",
+  "checklist": [
+    {
+      "id": "c1_text_input",
+      "description": "이름 등을 적는 텍스트 입력창이 있다",
+      "type": "element_exists",
+      "selector": "input[type='text'], input:not([type])"
+    },
+    {
+      "id": "c2_choice_inputs",
+      "description": "선택형 질문(라디오 또는 체크박스)이 최소 2개 있다",
+      "type": "element_count_min",
+      "selector": "input[type='radio'], input[type='checkbox']",
+      "min": 2
+    },
+    {
+      "id": "c3_multiple_questions",
+      "description": "질문이 여러 개로 구분돼 있다",
+      "type": "any_of",
+      "checks": [
+        { "type": "element_count_min", "selector": "label", "min": 2 },
+        { "type": "element_count_min", "selector": "[class*=question]", "min": 2 }
+      ]
+    },
+    {
+      "id": "c4_submit",
+      "description": "제출 버튼이 있다",
+      "type": "any_of",
+      "checks": [
+        { "type": "element_exists", "selector": "button[type='submit'], input[type='submit']" },
+        { "type": "text_contains_any", "texts": ["제출", "Submit"] }
+      ]
+    },
+    {
+      "id": "c5_form_tag",
+      "description": "form 태그로 감싸져 있다",
+      "type": "element_exists",
+      "selector": "form"
+    },
+    {
+      "id": "c6_viewport",
+      "description": "모바일 대응을 위한 viewport meta 태그가 있다",
+      "type": "element_exists",
+      "selector": "meta[name='viewport']"
+    }
+  ]
+}

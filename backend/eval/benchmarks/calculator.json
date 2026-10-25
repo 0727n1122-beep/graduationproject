@@ -1,0 +1,49 @@
+{
+  "id": "calculator",
+  "name": "계산기",
+  "original_prompt": "계산기 하나 만들어줘 숫자 누르고 더하기 빼기 곱하기 나누기 되고 결과 보여지는 화면도 있어야 해",
+  "checklist": [
+    {
+      "id": "c1_display",
+      "description": "계산 결과를 보여주는 화면 영역이 있다",
+      "type": "any_of",
+      "checks": [
+        { "type": "element_exists", "selector": "input[readonly]" },
+        { "type": "element_exists", "selector": "[class*=display], [class*=screen], [class*=result]" }
+      ]
+    },
+    {
+      "id": "c2_number_buttons",
+      "description": "숫자/연산자를 누르는 버튼이 최소 10개 있다 (button 태그든 클릭 핸들러 달린 div든 구조 무관)",
+      "type": "any_of",
+      "checks": [
+        { "type": "element_count_min", "selector": "button", "min": 10 },
+        { "type": "element_count_min", "selector": "[onclick], [class*=btn], [class*=key]", "min": 10 }
+      ]
+    },
+    {
+      "id": "c3_operators",
+      "description": "사칙연산 기호가 화면에 있다",
+      "type": "text_contains_any",
+      "texts": ["+", "-", "×", "÷", "*", "/"]
+    },
+    {
+      "id": "c4_equals",
+      "description": "결과를 계산하는 '=' 표시가 있다",
+      "type": "text_contains_any",
+      "texts": ["="]
+    },
+    {
+      "id": "c5_clear",
+      "description": "초기화(C/AC/초기화) 버튼이 있다",
+      "type": "text_contains_any",
+      "texts": ["AC", "C", "초기화", "Clear"]
+    },
+    {
+      "id": "c6_viewport",
+      "description": "모바일 대응을 위한 viewport meta 태그가 있다",
+      "type": "element_exists",
+      "selector": "meta[name='viewport']"
+    }
+  ]
+}
