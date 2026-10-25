@@ -1,7 +1,6 @@
 # Meeting Log — Team 10 (Vicpie / Minifi)
 
 강의 시간에 수행한 일과 시행착오·의사결정을 날짜별로 기록합니다. (정리: 이유진 / 날짜순으로 이어서 추가)
-일부 날짜의 상세 회의록은 [`docs/meeting-minutes/`](./docs/meeting-minutes/)에 있습니다.
 
 ---
 
