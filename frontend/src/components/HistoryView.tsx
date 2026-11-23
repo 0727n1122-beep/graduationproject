@@ -17,6 +17,7 @@
 // 아쿠아블루(#00C9C8/#0891B2) 테마 — DiagnosisCards.tsx와 동일한 팔레트.
 // ============================================================
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { HistoryItem } from "@/types/history";
@@ -37,9 +38,32 @@ function formatDate(iso: string): string {
   return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export default function HistoryView({ items }: { items: HistoryItem[] }) {
+export default function HistoryView({
+  items,
+  onDelete,
+}: {
+  items: HistoryItem[];
+  /** 성공하면 null, 실패하면 에러 메시지를 돌려준다. 성공 시 items에서 해당 항목이
+   *  바로 빠지도록(재조회 없이) 호출부(app/history/page.tsx)가 로컬 상태를 갱신한다. */
+  onDelete: (id: number) => Promise<string | null>;
+}) {
   const router = useRouter();
   const recent = items.slice(0, RECENT_LIMIT);
+
+  const [confirmingId, setConfirmingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deleteError, setDeleteError] = useState<{ id: number; message: string } | null>(null);
+
+  async function confirmDelete() {
+    if (confirmingId === null) return;
+    const id = confirmingId;
+    setDeletingId(id);
+    setDeleteError(null);
+    const message = await onDelete(id);
+    setDeletingId(null);
+    setConfirmingId(null);
+    if (message) setDeleteError({ id, message });
+  }
 
   const count = items.length;
   const totalIssues = items.reduce((sum, it) => sum + it.issue_count, 0);
@@ -157,39 +181,88 @@ export default function HistoryView({ items }: { items: HistoryItem[] }) {
             </div>
             <div className="flex flex-col gap-2.5 p-5">
               {recent.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex flex-wrap items-center gap-4 rounded-[10px] border border-[#E4E8EE] bg-[#F5F7F9] px-4 py-3"
-                >
-                  <div className="min-w-[220px] flex-1">
-                    <div className="mb-0.5 font-mono text-[10.5px] font-bold text-[#9AA4B0]">
-                      {formatDate(item.created_at)}
+                <div key={item.id}>
+                  <div className="flex flex-wrap items-center gap-4 rounded-[10px] border border-[#E4E8EE] bg-[#F5F7F9] px-4 py-3">
+                    <div className="min-w-[220px] flex-1">
+                      <div className="mb-0.5 font-mono text-[10.5px] font-bold text-[#9AA4B0]">
+                        {formatDate(item.created_at)}
+                      </div>
+                      <div className="text-[13.5px] leading-[1.5] text-[#182430]">
+                        {truncateForDisplay(item.original_prompt.replace(/\s+/g, " "), 72)}
+                      </div>
                     </div>
-                    <div className="text-[13.5px] leading-[1.5] text-[#182430]">
-                      {truncateForDisplay(item.original_prompt.replace(/\s+/g, " "), 72)}
+                    <div className="flex flex-none items-center gap-2 font-mono text-[11px] font-bold text-[#5C6773]">
+                      <span className="rounded bg-[#FBF0D9] px-1.5 py-0.5 text-[#C9860A]">이슈 {item.issue_count}</span>
+                      <span className="rounded bg-[#E3F6EE] px-1.5 py-0.5 text-[#0B8564]">
+                        -{Math.max(0, item.saved_percent)}% · {Math.max(0, item.saved_tokens)}토큰
+                      </span>
                     </div>
+                    <button
+                      onClick={() => viewRecord(item)}
+                      disabled={!item.diagnosis_detail}
+                      title={item.diagnosis_detail ? undefined : "예전 기록이라 상세 내역이 없어요"}
+                      className="h-8 flex-none rounded-lg border border-[#00C9C8] px-3.5 text-[12px] font-bold text-[#0891B2] transition-colors hover:bg-[#E0F7F7] disabled:cursor-not-allowed disabled:border-[#E4E8EE] disabled:text-[#9AA4B0] disabled:hover:bg-transparent"
+                    >
+                      기록 보기
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDeleteError(null);
+                        setConfirmingId(item.id);
+                      }}
+                      disabled={deletingId === item.id}
+                      title="삭제"
+                      aria-label="삭제"
+                      className="flex h-8 w-8 flex-none items-center justify-center rounded-lg border border-[#E4E8EE] bg-white text-[#9AA4B0] transition-colors hover:border-[#E5484D] hover:text-[#E5484D] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <TrashIcon />
+                    </button>
                   </div>
-                  <div className="flex flex-none items-center gap-2 font-mono text-[11px] font-bold text-[#5C6773]">
-                    <span className="rounded bg-[#FBF0D9] px-1.5 py-0.5 text-[#C9860A]">이슈 {item.issue_count}</span>
-                    <span className="rounded bg-[#E3F6EE] px-1.5 py-0.5 text-[#0B8564]">
-                      -{Math.max(0, item.saved_percent)}% · {Math.max(0, item.saved_tokens)}토큰
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => viewRecord(item)}
-                    disabled={!item.diagnosis_detail}
-                    title={item.diagnosis_detail ? undefined : "예전 기록이라 상세 내역이 없어요"}
-                    className="h-8 flex-none rounded-lg border border-[#00C9C8] px-3.5 text-[12px] font-bold text-[#0891B2] transition-colors hover:bg-[#E0F7F7] disabled:cursor-not-allowed disabled:border-[#E4E8EE] disabled:text-[#9AA4B0] disabled:hover:bg-transparent"
-                  >
-                    기록 보기
-                  </button>
+                  {deleteError?.id === item.id && (
+                    <p className="mt-1.5 px-1 text-[11.5px] font-semibold text-[#E5484D]">{deleteError.message}</p>
+                  )}
                 </div>
               ))}
             </div>
           </div>
         </>
       )}
+
+      {confirmingId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-6">
+          <div className="w-full max-w-[360px] rounded-xl border border-[#E4E8EE] bg-white p-6">
+            <h3 className="mb-2 text-[15px] font-extrabold text-[#182430]">이 기록을 삭제하시겠어요?</h3>
+            <p className="mb-5 text-[12.5px] leading-[1.6] font-semibold text-[#9AA4B0]">
+              삭제한 첨삭 기록은 다시 볼 수 없어요. 이 작업은 되돌릴 수 없어요.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={confirmDelete}
+                disabled={deletingId !== null}
+                className="h-[38px] flex-1 rounded-[9px] bg-[#E5484D] text-[12.5px] font-bold text-white hover:bg-[#C93D42] disabled:bg-[#D4D9E0]"
+              >
+                {deletingId !== null ? "처리 중…" : "삭제하기"}
+              </button>
+              <button
+                onClick={() => setConfirmingId(null)}
+                disabled={deletingId !== null}
+                className="h-[38px] flex-1 rounded-[9px] border border-[#E4E8EE] bg-white text-[12.5px] font-bold text-[#182430] hover:bg-[#F5F7F9]"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M4 7h16M9 7V4h6v3M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
