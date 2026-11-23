@@ -13,6 +13,8 @@ class User(Base):
     nickname = Column(String(50), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     is_active = Column(Boolean, default=True)
+    # 마이페이지 프로필 이미지. data URI(base64)로 저장 (별도 스토리지 서비스 없이 DB에 바로 저장).
+    profile_image = Column(Text, nullable=True)
 
     histories = relationship("PromptHistory", back_populates="user")
 
