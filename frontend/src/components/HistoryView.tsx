@@ -117,9 +117,6 @@ export default function HistoryView({
           히스토리
         </div>
         <h1 className="text-[26px] font-extrabold tracking-tight text-[#182430]">첨삭 히스토리</h1>
-        <div className="mt-1 text-[12.5px] font-semibold text-[#9AA4B0]">
-          그때 반영했던 첨삭 기록을 다시 볼 수 있어요
-        </div>
       </div>
 
       {count === 0 ? (
@@ -192,8 +189,8 @@ export default function HistoryView({
                       </div>
                     </div>
                     <div className="flex flex-none items-center gap-2 font-mono text-[11px] font-bold text-[#5C6773]">
-                      <span className="rounded bg-[#FBF0D9] px-1.5 py-0.5 text-[#C9860A]">이슈 {item.issue_count}</span>
-                      <span className="rounded bg-[#E3F6EE] px-1.5 py-0.5 text-[#0B8564]">
+                      <span className="rounded bg-[#E0F7F7] px-1.5 py-0.5 text-[#0891B2]">이슈 {item.issue_count}</span>
+                      <span className="rounded bg-[#00C9C8] px-1.5 py-0.5 text-white">
                         -{Math.max(0, item.saved_percent)}% · {Math.max(0, item.saved_tokens)}토큰
                       </span>
                     </div>
