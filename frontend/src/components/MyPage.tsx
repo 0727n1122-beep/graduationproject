@@ -1,24 +1,25 @@
 "use client";
 
 // ============================================================
-// MyPage.tsx — 마이페이지 (프로필/이용 현황/로그아웃/회원탈퇴)
+// MyPage.tsx — 마이페이지 (프로필/프로필 이미지/이용 현황/로그아웃/회원탈퇴)
 // ------------------------------------------------------------
 // DiagnosisCards의 sheet 카드 스타일(흰 배경 + 얇은 테두리 + SheetHeader)을
 // 그대로 재사용해서 다른 페이지들과 톤을 맞춤.
-// 백엔드 PATCH/DELETE /auth/me는 아직 없음(유진 작업 예정) — 붙는 대로 바로 동작.
 // ============================================================
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const PROFILE_IMAGE_MAX_BYTES = 2 * 1024 * 1024; // 2MB — 백엔드와 동일한 제한
+const PROFILE_IMAGE_ACCEPT = "image/jpeg,image/png,image/webp,image/gif";
 
 interface UserInfo {
   id: number;
   email: string;
   nickname: string;
-  /** 아직 백엔드에 없는 필드 — 값이 오면 이니셜 대신 실제 이미지로 표시 */
-  avatar_url?: string | null;
+  /** null이면 이니셜 아바타. 값이 있으면 "data:image/png;base64,..." 형태의 완성된 data URI */
+  profile_image: string | null;
   created_at: string;
 }
 
@@ -56,6 +57,10 @@ export default function MyPage() {
 
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -114,6 +119,60 @@ export default function MyPage() {
       setSaveError("서버에 연결할 수 없어요.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  // 파일 선택 즉시 업로드 — 별도 "저장" 버튼 없이 바로 반영됨
+  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // 같은 파일을 다시 골라도 onChange가 또 발동하도록 초기화
+    if (!file) return;
+    if (file.size > PROFILE_IMAGE_MAX_BYTES) {
+      setImageError("이미지 용량은 2MB 이하여야 해요.");
+      return;
+    }
+    setImageError(null);
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      // FormData는 Content-Type을 직접 넣으면 안 됨(브라우저가 boundary 포함해서 자동 설정) — authHeaders()는 Authorization만 주니 그대로 사용
+      const res = await fetch(`${API_URL}/auth/me/profile-image`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setImageError(data.detail?.error ?? "업로드에 실패했어요.");
+        return;
+      }
+      setUser(data);
+    } catch {
+      setImageError("서버에 연결할 수 없어요.");
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
+  async function handleResetImage() {
+    setImageError(null);
+    setUploadingImage(true);
+    try {
+      const res = await fetch(`${API_URL}/auth/me/profile-image`, {
+        method: "DELETE",
+        headers: authHeaders(),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setImageError(data.detail?.error ?? "되돌리기에 실패했어요.");
+        return;
+      }
+      setUser(data);
+    } catch {
+      setImageError("서버에 연결할 수 없어요.");
+    } finally {
+      setUploadingImage(false);
     }
   }
 
@@ -178,6 +237,7 @@ export default function MyPage() {
             setEditing((v) => !v);
             setNicknameDraft(user.nickname);
             setSaveError(null);
+            setImageError(null);
           }}
           className="h-[34px] flex-none rounded-[9px] border border-[#E4E8EE] bg-white px-3.5 text-[12.5px] font-bold text-[#182430] hover:bg-[#F5F7F9]"
         >
@@ -187,10 +247,41 @@ export default function MyPage() {
 
       {editing && (
         <div className="rounded-xl border border-[#E4E8EE] bg-white p-5">
-          <h3 className="mb-3.5 text-[12px] font-extrabold text-[#5C6773]">닉네임 변경</h3>
-          <div className="mb-3.5 flex justify-center">
-            <Avatar user={{ ...user, nickname: nicknameDraft || user.nickname }} size={52} />
+          <h3 className="mb-3.5 text-[12px] font-extrabold text-[#5C6773]">프로필 수정</h3>
+
+          {/* 프로필 이미지 — 파일 선택 즉시 업로드되므로 별도 저장 버튼 없음 */}
+          <div className="mb-5 flex flex-col items-center gap-3 border-b border-[#EEF1F4] pb-5">
+            <Avatar user={user} size={64} />
+            <div className="flex gap-2">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingImage}
+                className="h-[32px] rounded-[8px] border border-[#E4E8EE] bg-white px-3 text-[11.5px] font-bold text-[#182430] hover:bg-[#F5F7F9] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {uploadingImage ? "처리 중…" : "이미지 변경"}
+              </button>
+              {user.profile_image && (
+                <button
+                  onClick={handleResetImage}
+                  disabled={uploadingImage}
+                  className="h-[32px] rounded-[8px] border border-[#E4E8EE] bg-white px-3 text-[11.5px] font-bold text-[#9AA4B0] hover:text-[#E5484D] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  기본 이미지로
+                </button>
+              )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={PROFILE_IMAGE_ACCEPT}
+              onChange={handleImageChange}
+              className="hidden"
+            />
+            {imageError && <p className="text-[11.5px] font-semibold text-[#E5484D]">{imageError}</p>}
           </div>
+
+          {/* 닉네임 */}
+          <label className="mb-1.5 block text-[12px] font-bold text-[#5C6773]">닉네임</label>
           <input
             value={nicknameDraft}
             onChange={(e) => setNicknameDraft(e.target.value)}
@@ -276,11 +367,11 @@ export default function MyPage() {
 }
 
 function Avatar({ user, size }: { user: UserInfo; size: number }) {
-  if (user.avatar_url) {
+  if (user.profile_image) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={user.avatar_url}
+        src={user.profile_image}
         alt={user.nickname}
         style={{ width: size, height: size }}
         className="flex-none rounded-full object-cover"
