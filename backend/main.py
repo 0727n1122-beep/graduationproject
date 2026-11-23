@@ -31,6 +31,14 @@ if "prompt_histories" in _inspector.get_table_names():
             with engine.begin() as conn:
                 conn.execute(text(f"ALTER TABLE prompt_histories ADD COLUMN {_new_col} {_json_col_type}"))
 
+# 마이페이지 프로필 이미지 기능 추가 — 기존에 배포된 DB의 users 테이블엔
+# profile_image 컬럼이 없을 수 있으니 없을 때만 안전하게 추가.
+if "users" in _inspector.get_table_names():
+    _existing_user_cols = {c["name"] for c in _inspector.get_columns("users")}
+    if "profile_image" not in _existing_user_cols:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN profile_image TEXT"))
+
 # ── 라우터 import ──────────────────────────────────────────
 from auth import router as auth_router, decode_token
 from history import router as history_router

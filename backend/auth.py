@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status, Header, UploadFile, File
 from typing import Optional
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from database import get_db
 from models import User
 import os
+import base64
 from google.oauth2 import id_token as google_id_token
 from google.auth.transport import requests as google_auth_requests
 
@@ -51,6 +52,7 @@ class UserResponse(BaseModel):
     email: str
     nickname: str
     created_at: datetime
+    profile_image: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -285,6 +287,50 @@ def update_me(
             detail={"error": "닉네임은 2~20자 사이여야 해요.", "code": "INVALID_NICKNAME"}
         )
     current_user.nickname = nickname
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
+# ── 프로필 이미지 ──────────────────────────────────────────
+PROFILE_IMAGE_MAX_BYTES = 2 * 1024 * 1024  # 2MB
+PROFILE_IMAGE_ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+
+@router.post("/me/profile-image", response_model=UserResponse)
+async def upload_profile_image(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """마이페이지 프로필 이미지 업로드.
+    별도 스토리지 서비스(S3 등) 없이, 이미지를 base64 data URI로 변환해 DB에 바로 저장함
+    (Railway 컨테이너 파일시스템은 재배포 때마다 초기화되므로 로컬 디스크 저장은 쓸 수 없음).
+    작은 프로젝트 규모에 맞춘 선택이라, 유저/트래픽이 늘면 외부 이미지 스토리지로 옮기는 걸 권장."""
+    if file.content_type not in PROFILE_IMAGE_ALLOWED_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail={"error": "jpg, png, webp, gif 파일만 업로드할 수 있어요.", "code": "INVALID_FILE_TYPE"}
+        )
+    data = await file.read()
+    if len(data) > PROFILE_IMAGE_MAX_BYTES:
+        raise HTTPException(
+            status_code=400,
+            detail={"error": "이미지 용량은 2MB 이하여야 해요.", "code": "FILE_TOO_LARGE"}
+        )
+    encoded = base64.b64encode(data).decode("ascii")
+    current_user.profile_image = f"data:{file.content_type};base64,{encoded}"
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
+@router.delete("/me/profile-image", response_model=UserResponse)
+def delete_profile_image(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """프로필 이미지를 기본 이미지로 되돌림(필드를 비움)."""
+    current_user.profile_image = None
     db.commit()
     db.refresh(current_user)
     return current_user
