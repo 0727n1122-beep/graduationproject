@@ -249,9 +249,21 @@ export default function MyPage() {
         <div className="rounded-xl border border-[#E4E8EE] bg-white p-5">
           <h3 className="mb-3.5 text-[12px] font-extrabold text-[#5C6773]">프로필 수정</h3>
 
-          {/* 프로필 이미지 — 파일 선택 즉시 업로드되므로 별도 저장 버튼 없음 */}
+          {/* 프로필 이미지 — 아바타 자체를 클릭해도, 아래 버튼을 눌러도 파일 선택창이 뜸.
+              파일 선택 즉시 업로드되므로 별도 저장 버튼 없음 */}
           <div className="mb-5 flex flex-col items-center gap-3 border-b border-[#EEF1F4] pb-5">
-            <Avatar user={user} size={64} />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingImage}
+              title="이미지 변경"
+              className="group relative rounded-full disabled:cursor-not-allowed"
+            >
+              <Avatar user={user} size={64} />
+              <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 text-white opacity-0 transition-all group-hover:bg-black/40 group-hover:opacity-100">
+                <CameraIcon />
+              </span>
+            </button>
             <div className="flex gap-2">
               <button
                 onClick={() => fileInputRef.current?.click()}
@@ -363,6 +375,19 @@ export default function MyPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function CameraIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path
+        d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="13.5" r="3.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
