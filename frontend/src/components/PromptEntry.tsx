@@ -24,9 +24,6 @@ export default function PromptEntry({ prompt, onChange, onSubmit, loading, error
           03 · 첨삭 노트
         </div>
         <h1 className="text-[26px] font-extrabold tracking-tight text-[#182430]">프롬프트 첨삭</h1>
-        <div className="mt-1 text-[12.5px] font-semibold text-[#9AA4B0]">
-          쓰던 프롬프트를 그대로 붙여넣으세요. 다듬을 필요 없어요.
-        </div>
       </div>
 
       <div className="rounded-xl border border-[#E4E8EE] bg-white p-6">
