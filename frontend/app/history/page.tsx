@@ -39,6 +39,32 @@ export default function HistoryPage() {
     })();
   }, []);
 
+  // 성공하면 null, 실패하면 에러 메시지를 돌려준다 — HistoryView가 항목별로 표시
+  async function handleDelete(id: number): Promise<string | null> {
+    const token = localStorage.getItem("access_token");
+    try {
+      const res = await fetch(`${API_URL}/history/${id}`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.status === 204 || res.ok) {
+        setItems((prev) => (prev ? prev.filter((it) => it.id !== id) : prev));
+        return null;
+      }
+      // /history 에러도 /auth/me와 동일하게 HTTPException(detail={"error","code"}) 형태
+      let message = "삭제에 실패했어요.";
+      try {
+        const data = await res.json();
+        message = data?.detail?.error ?? message;
+      } catch {
+        // 바디가 없거나 JSON이 아니면 기본 메시지 사용
+      }
+      return message;
+    } catch {
+      return "서버에 연결할 수 없어요.";
+    }
+  }
+
   return (
     <div className="flex min-h-screen bg-[#F5F7F9]">
       <DiagnosisSidebar active="history" />
@@ -51,7 +77,7 @@ export default function HistoryPage() {
           ) : items === null ? (
             <p className="text-[13px] font-semibold text-[#9AA4B0]">불러오는 중…</p>
           ) : (
-            <HistoryView items={items} />
+            <HistoryView items={items} onDelete={handleDelete} />
           )}
         </div>
       </main>
