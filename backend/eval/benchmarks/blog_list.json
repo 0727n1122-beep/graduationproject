@@ -1,0 +1,44 @@
+{
+  "id": "blog_list",
+  "name": "블로그 글 목록",
+  "original_prompt": "블로그 글 목록 보여주는 페이지 만들어줘 제목이랑 날짜 간단한 요약 이렇게 쭉 나오면 좋겠어",
+  "checklist": [
+    {
+      "id": "c1_post_items",
+      "description": "글 항목이 최소 3개 반복돼 있다 (article/li 태그든 카드형 div든 구조 무관)",
+      "type": "any_of",
+      "checks": [
+        { "type": "element_count_min", "selector": "article, li", "min": 3 },
+        { "type": "element_count_min", "selector": "[class*=post], [class*=item], [class*=card], [class*=entry]", "min": 3 }
+      ]
+    },
+    {
+      "id": "c2_titles",
+      "description": "각 글의 제목 역할을 하는 요소가 최소 3개 있다",
+      "type": "any_of",
+      "checks": [
+        { "type": "element_count_min", "selector": "h2, h3, h4", "min": 3 },
+        { "type": "element_count_min", "selector": "[class*=title]", "min": 3 }
+      ]
+    },
+    {
+      "id": "c3_date",
+      "description": "날짜 표시가 있다",
+      "type": "text_regex",
+      "pattern": "\\d{4}[.\\-/]\\d{1,2}[.\\-/]\\d{1,2}|\\d{1,2}월\\s*\\d{1,2}일"
+    },
+    {
+      "id": "c4_summary_text",
+      "description": "각 글의 요약/본문 설명 텍스트가 최소 3개 있다",
+      "type": "element_count_min",
+      "selector": "p",
+      "min": 3
+    },
+    {
+      "id": "c5_viewport",
+      "description": "모바일 대응을 위한 viewport meta 태그가 있다",
+      "type": "element_exists",
+      "selector": "meta[name='viewport']"
+    }
+  ]
+}

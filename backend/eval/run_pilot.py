@@ -34,7 +34,7 @@ import requests
 import anthropic
 from playwright.sync_api import sync_playwright
 
-from checks import run_check
+from checks import run_check, run_setup_action
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -88,7 +88,7 @@ def generate_html(client: anthropic.Anthropic, prompt: str) -> tuple[str, dict]:
     return html, usage
 
 
-def grade_html(html_path: Path, checklist: list[dict]) -> dict:
+def grade_html(html_path: Path, checklist: list[dict], setup_actions: list[dict] = None) -> dict:
     console_errors = []
     item_results = []
     with sync_playwright() as pw:
@@ -98,6 +98,14 @@ def grade_html(html_path: Path, checklist: list[dict]) -> dict:
         page.on("pageerror", lambda exc: console_errors.append(str(exc)))
         page.goto(f"file://{html_path.resolve()}")
         page.wait_for_timeout(500)  # JS onload/렌더링 여유
+        for action in setup_actions or []:
+            # 할 일 추가 후 체크박스가 생기는 등, 상호작용 후에만 나타나는 기능을
+            # 채점 전에 미리 실행해둠. 실패해도(셀렉터가 다를 수 있음) 채점 자체는 계속.
+            try:
+                run_setup_action(page, action)
+                page.wait_for_timeout(200)
+            except Exception as e:
+                console_errors.append(f"setup_action 실패 {action}: {e}")
         for item in checklist:
             try:
                 result = run_check(page, item)
@@ -131,7 +139,7 @@ def run_spec(spec_path: Path, client: anthropic.Anthropic) -> dict:
         html_path.write_text(html, encoding="utf-8")
 
         print(f"  [{cond_name}] Playwright 채점 중...")
-        grading = grade_html(html_path, spec["checklist"])
+        grading = grade_html(html_path, spec["checklist"], spec.get("setup_actions"))
 
         spec_result["conditions"][cond_name] = {
             "prompt": cond_prompt,
