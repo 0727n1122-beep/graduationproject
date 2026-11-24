@@ -189,8 +189,8 @@ export default function HistoryView({
                       </div>
                     </div>
                     <div className="flex flex-none items-center gap-2 font-mono text-[11px] font-bold text-[#5C6773]">
-                      <span className="rounded bg-[#E0F7F7] px-1.5 py-0.5 text-[#0891B2]">이슈 {item.issue_count}</span>
-                      <span className="rounded bg-[#00C9C8] px-1.5 py-0.5 text-white">
+                      <span className="rounded bg-[#CBE4DE] px-1.5 py-0.5 text-[#2C3333]">이슈 {item.issue_count}</span>
+                      <span className="rounded bg-[#2C3333] px-1.5 py-0.5 text-white">
                         -{Math.max(0, item.saved_percent)}% · {Math.max(0, item.saved_tokens)}토큰
                       </span>
                     </div>
@@ -198,7 +198,7 @@ export default function HistoryView({
                       onClick={() => viewRecord(item)}
                       disabled={!item.diagnosis_detail}
                       title={item.diagnosis_detail ? undefined : "예전 기록이라 상세 내역이 없어요"}
-                      className="h-8 flex-none rounded-lg border border-[#00C9C8] px-3.5 text-[12px] font-bold text-[#0891B2] transition-colors hover:bg-[#E0F7F7] disabled:cursor-not-allowed disabled:border-[#E4E8EE] disabled:text-[#9AA4B0] disabled:hover:bg-transparent"
+                      className="h-8 flex-none rounded-lg border border-[#0E8388] px-3.5 text-[12px] font-bold text-[#0E8388] transition-colors hover:bg-[#CBE4DE] disabled:cursor-not-allowed disabled:border-[#E4E8EE] disabled:text-[#9AA4B0] disabled:hover:bg-transparent"
                     >
                       기록 보기
                     </button>
